@@ -5,6 +5,8 @@ import { LetterMatchingGame } from "./LetterMatchingGame.jsx";
 import { CerebralCarGame } from "./CerebralCarGame.jsx";
 import DiagnosticRecorder from "./DiagnosticRecorder.jsx";
 import { EmotionGame } from "./EmotionGame.jsx";
+import { TypingAdventureGame } from "./TypingAdventureGame.jsx";
+import { MemoryGridGame } from "./MemoryGridGame.jsx";
 
 const cardVariants = {
   initial: { y: 12, opacity: 0 },
@@ -22,6 +24,20 @@ const cards = [
     description: "Match identical letters (b-b). Watch for lookalikes!",
     color: "from-bingo-yellow to-bingo-coral",
     icon: "🧩"
+  },
+  {
+    id: "typing",
+    title: "Typing Hero",
+    description: "Type letters and words to win stars!",
+    color: "from-bingo-blue to-bingo-indigo",
+    icon: "⌨️"
+  },
+  {
+    id: "memory",
+    title: "Memory Grid",
+    description: "Remember the lights and win points!",
+    color: "from-emerald-400 to-teal-500",
+    icon: "🧠"
   },
   {
     id: "racer",
@@ -57,11 +73,12 @@ const cards = [
     description: "See all the shiny stars you’ve earned.",
     color: "from-bingo-lavender to-bingo-blue",
     icon: "⭐"
+
   }
 ];
 
 export function ChildMode() {
-  const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', null
+  const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', 'memory-grid', null
 
   if (activeGame === 'letter-match') {
     return <LetterMatchingGame onBack={() => setActiveGame(null)} />;
@@ -77,6 +94,12 @@ export function ChildMode() {
 
   if (activeGame === 'emotion-game') {
     return <EmotionGame onBack={() => setActiveGame(null)} />;
+  if (activeGame === 'typing-adventure') {
+    return <TypingAdventureGame onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'memory-grid') {
+    return <MemoryGridGame onBack={() => setActiveGame(null)} />;
   }
 
   return (
@@ -123,6 +146,10 @@ export function ChildMode() {
                     setActiveGame('diagnostic');
                   } else if (card.id === "emotions") {
                     setActiveGame('emotion-game');
+                  } else if (card.id === "typing") {
+                    setActiveGame('typing-adventure');
+                  } else if (card.id === "memory") {
+                    setActiveGame('memory-grid');
                   }
                 }}
                 className="group relative flex flex-col items-center justify-between rounded-3xl bg-white/90 px-4 py-4 sm:px-3 sm:py-5 shadow-soft border border-white/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/70"
@@ -134,7 +161,7 @@ export function ChildMode() {
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 from-bingo-blue/25 to-bingo-lavender/25" />
                 <div className="relative z-10 flex flex-col items-center gap-3">
                   <div
-                    className={`flex items - center justify - center w - 14 h - 14 rounded - 3xl bg - gradient - to - br ${card.color} shadow - md text - 3xl`}
+                    className={`flex items-center justify-center w-14 h-14 rounded-3xl bg-gradient-to-br ${card.color} shadow-md text-3xl`}
                     aria-hidden="true"
                   >
                     {card.icon}
@@ -167,8 +194,8 @@ export function ChildMode() {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
-                        className={`inline - block w - 4 h - 4 rounded - full ${star <= 3 ? "bg-amber-400" : "bg-white/60"
-                          } shadow - sm`}
+                        className={`inline-block w-4 h-4 rounded-full ${star <= 3 ? "bg-amber-400" : "bg-white/60"
+                          } shadow-sm`}
                       />
                     ))}
                   </div>
@@ -210,3 +237,5 @@ export function ChildMode() {
   );
 }
 
+
+}
