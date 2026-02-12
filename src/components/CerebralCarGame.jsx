@@ -177,62 +177,81 @@ export const CerebralCarGame = ({ onBack }) => {
     const updateGameObjects = () => {
         setObstacles(prev => {
             const nextObs = [];
-            const playerY = 80;
             const currentLane = playerLaneRef.current;
             const config = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.EASY;
 
-            // 1. Identify safe lanes
-            // A lane is "blocked" if there is an obstacle in the "danger zone" (roughly y=-25 to y=90)
+            // Standardized Coordinates (Percentage from Top)
+            const PLAYER_TOP = 75;
+            const PLAYER_BOTTOM = 90;
+
+            // 1. Analyze Field for Safety
             const blockedLanes = new Set();
             prev.forEach(o => {
-                if (o.y > -25 && o.y < 90) { // Broad range to match player area
+                if (o.y > -30 && o.y < PLAYER_BOTTOM) {
                     blockedLanes.add(o.lane);
                 }
             });
 
+            // 2. Determine Dodge Instruction
             let foundInstruction = null;
+            const isCurrentLaneDangerous = blockedLanes.has(currentLane);
 
-            prev.forEach(obs => {
-                obs.y += config.speed;
+            if (isCurrentLaneDangerous) {
+                let nearestSafeLane = -1;
+                let minDist = Infinity;
 
-                // Instruction Trigger
-                // If obstacle is in Player Lane, arriving soon
-                if (obs.lane === currentLane && obs.y > -15 && obs.y < 60) {
-                    // Check Left
-                    const canGoLeft = currentLane > 0 && !blockedLanes.has(currentLane - 1);
-                    const canGoRight = currentLane < config.lanes - 1 && !blockedLanes.has(currentLane + 1);
-
-                    if (canGoLeft && canGoRight) {
-                        // Both open, random
-                        foundInstruction = Math.random() < 0.5 ? 'LEFT' : 'RIGHT';
-                    } else if (canGoLeft) {
-                        foundInstruction = 'LEFT';
-                    } else if (canGoRight) {
-                        foundInstruction = 'RIGHT';
-                    } else {
-                        // Both blocked or invalid. Prioritize valid move even if dangerous.
-                        if (currentLane > 0) foundInstruction = 'LEFT';
-                        else if (currentLane < config.lanes - 1) foundInstruction = 'RIGHT';
+                for (let l = 0; l < config.lanes; l++) {
+                    if (!blockedLanes.has(l)) {
+                        const dist = Math.abs(l - currentLane);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            nearestSafeLane = l;
+                        }
                     }
                 }
 
-                // Collision
-                if (
-                    !obs.hasCollided &&
-                    obs.lane === currentLane &&
-                    obs.y + 5 >= playerY && obs.y <= playerY + 15
-                ) {
+                if (nearestSafeLane !== -1) {
+                    if (nearestSafeLane < currentLane) foundInstruction = 'LEFT';
+                    else if (nearestSafeLane > currentLane) foundInstruction = 'RIGHT';
+                } else {
+                    foundInstruction = currentLane === 0 ? 'RIGHT' : 'LEFT';
+                }
+            }
+
+            let frameCollisions = 0;
+
+            // 3. Update & Collide
+            prev.forEach(originalObs => {
+                // Create a shallow copy to avoid mutating state directly
+                const obs = { ...originalObs };
+                obs.y += config.speed;
+
+                const obsHeight = 15;
+                const obsBottom = obs.y + obsHeight;
+
+                const isLaneMatch = obs.lane === currentLane;
+                const isVerticalOverlap = (obsBottom > PLAYER_TOP + 2) && (obs.y < PLAYER_BOTTOM - 2);
+
+                if (isLaneMatch && isVerticalOverlap && !obs.hasCollided) {
                     obs.hasCollided = true;
-                    setScore(s => ({ ...s, collisions: s.collisions + 1 }));
-                    setFeedback('CRASH');
-                    setTimeout(() => setFeedback(null), 800);
+                    frameCollisions++;
                 }
 
                 if (obs.y < 120) nextObs.push(obs);
             });
 
-            // Side effect set instruction
-            if (foundInstruction) {
+            // Handle Collisions (Side Effect)
+            if (frameCollisions > 0) {
+                // We need to update score OUTSIDE the reducer preferably, or inside?
+                // setObstacles shouldn't trigger other state updates ideally, but in React events it's ok.
+                // Batched updates work fine.
+                setScore(s => ({ ...s, collisions: s.collisions + frameCollisions }));
+                setFeedback('CRASH');
+                setTimeout(() => setFeedback(null), 800);
+            }
+
+            // Update Instruction (Side Effect)
+            if (isCurrentLaneDangerous && foundInstruction) {
                 setDodgeInstruction({ direction: foundInstruction });
             } else {
                 setDodgeInstruction(null);

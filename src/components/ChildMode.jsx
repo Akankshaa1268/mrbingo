@@ -94,6 +94,8 @@ export function ChildMode() {
 
   if (activeGame === 'emotion-game') {
     return <EmotionGame onBack={() => setActiveGame(null)} />;
+  }
+
   if (activeGame === 'typing-adventure') {
     return <TypingAdventureGame onBack={() => setActiveGame(null)} />;
   }
@@ -237,5 +239,3 @@ export function ChildMode() {
   );
 }
 
-
-}
