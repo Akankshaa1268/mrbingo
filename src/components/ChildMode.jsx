@@ -4,6 +4,7 @@ import { MrBingoCharacter } from "./MrBingoCharacter.jsx";
 import { LetterMatchingGame } from "./LetterMatchingGame.jsx";
 import { CerebralCarGame } from "./CerebralCarGame.jsx";
 import { TypingAdventureGame } from "./TypingAdventureGame.jsx";
+import { MemoryGridGame } from "./MemoryGridGame.jsx";
 
 const cardVariants = {
   initial: { y: 12, opacity: 0 },
@@ -30,30 +31,23 @@ const cards = [
     icon: "⌨️"
   },
   {
+    id: "memory",
+    title: "Memory Grid",
+    description: "Remember the lights and win points!",
+    color: "from-emerald-400 to-teal-500",
+    icon: "🧠"
+  },
+  {
     id: "racer",
     title: "Cerebral Racer",
     description: "Dodge cars and follow the turns!",
     color: "from-bingo-mint to-bingo-blue",
     icon: "🏎️"
-  },
-  {
-    id: "challenge",
-    title: "Daily Challenge",
-    description: "A tiny challenge crafted just for today.",
-    color: "from-bingo-mint to-bingo-blue",
-    icon: "🎯"
-  },
-  {
-    id: "stars",
-    title: "My Stars",
-    description: "See all the shiny stars you’ve earned.",
-    color: "from-bingo-lavender to-bingo-blue",
-    icon: "⭐"
   }
 ];
 
 export function ChildMode() {
-  const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', null
+  const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', 'memory-grid', null
 
   if (activeGame === 'letter-match') {
     return <LetterMatchingGame onBack={() => setActiveGame(null)} />;
@@ -65,6 +59,10 @@ export function ChildMode() {
 
   if (activeGame === 'typing-adventure') {
     return <TypingAdventureGame onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'memory-grid') {
+    return <MemoryGridGame onBack={() => setActiveGame(null)} />;
   }
 
   return (
@@ -109,6 +107,8 @@ export function ChildMode() {
                     setActiveGame('cerebral-racer');
                   } else if (card.id === "typing") {
                     setActiveGame('typing-adventure');
+                  } else if (card.id === "memory") {
+                    setActiveGame('memory-grid');
                   }
                 }}
                 className="group relative flex flex-col items-center justify-between rounded-3xl bg-white/90 px-4 py-4 sm:px-3 sm:py-5 shadow-soft border border-white/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/70"
@@ -195,5 +195,6 @@ export function ChildMode() {
     </section>
   );
 }
+
 
 
