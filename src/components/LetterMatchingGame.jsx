@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LETTERS = ['b', 'd', 'p', 'q', 'm', 'w'];
+// Expanded Dyslexia Screening Pairs
+// Using distinct "confusion groups"
+const LETTER_PAIRS = [
+    ['b', 'd'], ['p', 'q'], ['m', 'w'],
+    ['n', 'u'], ['a', 'o'], ['c', 'e'],
+    ['i', 'j'], ['f', 't']
+];
 
-// Child-friendly distinctive colors
 const COLORS = [
     'bg-red-400', 'bg-orange-400', 'bg-amber-400',
     'bg-yellow-400', 'bg-lime-400', 'bg-green-400',
@@ -12,237 +17,334 @@ const COLORS = [
     'bg-violet-400', 'bg-purple-400', 'bg-fuchsia-400', 'bg-pink-400', 'bg-rose-400'
 ];
 
+const DIFFICULTY_LEVELS = {
+    EASY: { label: 'Easy', grid: 3, pairs: 4, labelColor: 'text-green-500', borderColor: 'border-green-400' }, // 3x3 = 9 (4 pairs + 1 free)
+    MEDIUM: { label: 'Medium', grid: 4, pairs: 8, labelColor: 'text-yellow-500', borderColor: 'border-yellow-400' }, // 4x4 = 16 (8 pairs)
+    HARD: { label: 'Hard', grid: 5, pairs: 12, labelColor: 'text-red-500', borderColor: 'border-red-400' }, // 5x5 = 25 (12 pairs + 1 free)
+};
+
 export const LetterMatchingGame = ({ onBack }) => {
+    // Game State
+    const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD' or null (menu)
     const [cards, setCards] = useState([]);
     const [selectedIndices, setSelectedIndices] = useState([]);
     const [matchedPairs, setMatchedPairs] = useState([]);
-    const [attempts, setAttempts] = useState(0);
     const [isGameComplete, setIsGameComplete] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [wrongAttempts, setWrongAttempts] = useState(0);
 
+    // Timer State
+    const [timeElapsed, setTimeElapsed] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
+    const timerRef = useRef(null);
+
+    // Timer Effect
     useEffect(() => {
-        initializeGame();
-    }, []);
+        if (isTimerRunning) {
+            timerRef.current = setInterval(() => {
+                setTimeElapsed(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(timerRef.current);
+        }
+        return () => clearInterval(timerRef.current);
+    }, [isTimerRunning]);
 
-    const initializeGame = () => {
-        // Generate pairs of letters
+    const startGame = (levelKey) => {
+        const levelConfig = DIFFICULTY_LEVELS[levelKey];
+        setDifficulty(levelKey);
+        setIsGameComplete(false);
+        setMatchedPairs([]);
+        setSelectedIndices([]);
+        setTimeElapsed(0);
+        setWrongAttempts(0);
+        setIsProcessing(false);
+
+        // Generate Cards
         let gameCards = [];
-        LETTERS.forEach(letter => {
-            gameCards.push({ content: letter });
-            gameCards.push({ content: letter });
+        // Shuffle PAIRS first
+        const shuffledPairs = [...LETTER_PAIRS].sort(() => Math.random() - 0.5);
+
+        // We need to fill `levelConfig.pairs` (e.g. 4, 8, 12).
+        // Strategy: Pick confusion pairs (b,d) and add them BOTH as separate matchable pairs (b,b) and (d,d).
+        // This ensures the confusion element is present on board.
+
+        let selectedLetters = [];
+        let slotsRemaining = levelConfig.pairs;
+
+        for (let pair of shuffledPairs) {
+            if (slotsRemaining >= 2) {
+                // Add both from the pair to maximize confusion
+                selectedLetters.push(pair[0]); // e.g. 'b'
+                selectedLetters.push(pair[1]); // e.g. 'd'
+                slotsRemaining -= 2;
+            } else if (slotsRemaining === 1) {
+                // Only space for one, pick random from pair
+                selectedLetters.push(Math.random() < 0.5 ? pair[0] : pair[1]);
+                slotsRemaining -= 1;
+            } else {
+                break;
+            }
+        }
+
+        // If we ran out of pairs but still need slots (Hard mode might need 12 pairs, we have 8 pairs=16 letters)
+        // We have enough total letters (16) to fill Hard (12).
+        // Code above should work fine since 16 > 12.
+
+        selectedLetters.forEach((letter, index) => {
+            // Create Pair of IDENTIAL letters
+            // Card 1
+            gameCards.push({
+                id: `p${index}-1`,
+                content: letter,
+                pairId: letter, // Match by letter content
+                color: getRandomColor(),
+                isFlipped: false,
+                isFree: false
+            });
+            // Card 2
+            gameCards.push({
+                id: `p${index}-2`,
+                content: letter, // Same letter
+                pairId: letter,
+                color: getRandomColor(),
+                isFlipped: false,
+                isFree: false
+            });
         });
+
+        // Add Free Tile if Odd Grid (Center usually)
+        if (levelConfig.grid % 2 !== 0) {
+            gameCards.push({
+                id: 'free-tile',
+                content: '⭐',
+                pairId: 'free',
+                color: 'bg-white',
+                isFlipped: true,
+                isFree: true,
+                isMatched: true
+            });
+        }
 
         // Shuffle cards for position
         gameCards.sort(() => Math.random() - 0.5);
-
-        // Shuffle colors and assign UNIQUE colors to each card instance
-        // This ensures matching is based on SHAPE, not colour.
-        const shuffledColors = [...COLORS].sort(() => Math.random() - 0.5);
-
-        gameCards = gameCards.map((card, index) => ({
-            ...card,
-            color: shuffledColors[index % shuffledColors.length],
-            uniqueId: index,
-            isMatched: false,
-        }));
-
         setCards(gameCards);
-        setSelectedIndices([]);
-        setMatchedPairs([]);
-        setAttempts(0);
-        setIsGameComplete(false);
-        setIsProcessing(false);
+
+        // Start Timer
+        setIsTimerRunning(true);
     };
+
+    const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
 
     const handleCardClick = (index) => {
         if (
-            selectedIndices.includes(index) ||
-            matchedPairs.includes(cards[index].content) ||
             isProcessing ||
-            isGameComplete
-        ) {
-            return;
-        }
+            isGameComplete ||
+            cards[index].isFree ||
+            matchedPairs.includes(cards[index].pairId) ||
+            selectedIndices.includes(index)
+        ) return;
 
         const newSelected = [...selectedIndices, index];
         setSelectedIndices(newSelected);
 
         if (newSelected.length === 2) {
             setIsProcessing(true);
-            setAttempts((prev) => prev + 1);
             checkForMatch(newSelected);
         }
     };
 
-    const checkForMatch = ([firstIndex, secondIndex]) => {
-        const firstCard = cards[firstIndex];
-        const secondCard = cards[secondIndex];
+    const checkForMatch = (indices) => {
+        const card1 = cards[indices[0]];
+        const card2 = cards[indices[1]];
 
-        if (firstCard.content === secondCard.content) {
+        if (card1.pairId === card2.pairId) {
             // Match found
-            setMatchedPairs((prev) => [...prev, firstCard.content]);
+            const newMatched = [...matchedPairs, card1.pairId];
+            setMatchedPairs(newMatched);
             setSelectedIndices([]);
             setIsProcessing(false);
 
-            // Check if game is complete
-            // cards.length / 2 is total pairs
-            if (matchedPairs.length + 1 === LETTERS.length) {
-                setTimeout(() => setIsGameComplete(true), 500);
+            // Check Win Condition
+            const config = DIFFICULTY_LEVELS[difficulty];
+            if (newMatched.length === config.pairs) {
+                handleGameComplete();
             }
         } else {
-            // No match - Wait and unselect
+            // No Match
             setTimeout(() => {
+                setWrongAttempts(prev => prev + 1);
                 setSelectedIndices([]);
                 setIsProcessing(false);
             }, 1000);
         }
     };
 
-    const isCardSelected = (index) => {
-        return selectedIndices.includes(index);
+    const handleGameComplete = () => {
+        setIsTimerRunning(false);
+        setIsGameComplete(true);
     };
 
-    const isCardMatched = (index) => {
-        return matchedPairs.includes(cards[index].content);
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
+
+    // --- RENDER HELPERS ---
+
+    if (!difficulty) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 w-full max-w-4xl mx-auto">
+                <h2 className="text-4xl font-bold text-slate-800 mb-2 text-center">Dyslexia Screening 🧩</h2>
+                <p className="text-slate-500 mb-8 text-center max-w-md">
+                    Find the matching confusing letter pairs! <br />
+                    (e.g. match <b>'b'</b> with <b>'b'</b>)
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    {Object.keys(DIFFICULTY_LEVELS).map(key => {
+                        const level = DIFFICULTY_LEVELS[key];
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => startGame(key)}
+                                className={`
+                                    flex flex-col items-center justify-center p-8 rounded-3xl 
+                                    bg-white border-4 shadow-xl hover:scale-105 transition-transform
+                                    ${level.borderColor}
+                                `}
+                            >
+                                <span className={`text-3xl font-black ${level.labelColor} mb-2`}>{level.label}</span>
+                                <span className="text-slate-400 font-bold">{level.grid}x{level.grid} Grid</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <button onClick={onBack} className="mt-12 px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                    Back to Menu
+                </button>
+            </div>
+        );
+    }
+
+    const config = DIFFICULTY_LEVELS[difficulty];
+    // Dynamic Grid Class
+    const gridClass = config.grid === 3 ? 'grid-cols-3' : config.grid === 4 ? 'grid-cols-4' : 'grid-cols-5';
 
     return (
-        <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-4 md:p-8">
+        <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 min-h-[80vh]">
             {/* Header */}
-            <div className="w-full flex justify-between items-center mb-8 bg-white/80 p-4 rounded-3xl shadow-sm border border-white/50 backdrop-blur-sm">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-colors"
-                >
-                    ← Back
-                </button>
-                <div className="flex gap-6 text-slate-800 font-bold text-lg md:text-xl">
-                    <div className="flex flex-col items-center">
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Attempts</span>
-                        <span className="text-2xl text-indigo-600">{attempts}</span>
+            <div className="flex justify-between items-center w-full mb-6 bg-white p-4 rounded-2xl shadow-sm border-2 border-slate-100">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setDifficulty(null)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
+                        ⬅ Back
+                    </button>
+                    <div>
+                        <h3 className={`font-bold ${config.labelColor}`}>{config.label} Mode</h3>
+                        <p className="text-xs text-slate-400">Match the pairs!</p>
                     </div>
-                    <div className="flex flex-col items-center">
-                        <span className="text-xs text-slate-500 uppercase tracking-wider">Matches</span>
-                        <span className="text-2xl text-emerald-500">{matchedPairs.length} / {LETTERS.length}</span>
-                    </div>
+                </div>
+
+                <div className="flex flex-col items-end">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Time</span>
+                    <span className="text-2xl font-mono font-bold text-slate-700">{formatTime(timeElapsed)}</span>
+                    <span className="text-xs font-bold text-red-400 mt-1">Mistakes: {wrongAttempts}</span>
                 </div>
             </div>
 
-            {/* Instructional Text */}
-            <div className="mb-6 text-center">
-                <h3 className="text-2xl font-bold text-slate-800 mb-2">Shape Detective! 🕵️</h3>
-                <p className="text-slate-600 font-medium text-lg max-w-lg mx-auto leading-snug">
-                    Tap the letters that look the same. <br />
-                    <span className="text-base font-normal opacity-80 block mt-1">don't let the colors trick you! Watch out for <b>b</b> vs <b>d</b>.</span>
-                </p>
-            </div>
-
             {/* Game Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 w-full justify-items-center">
-                {cards.map((card, index) => (
-                    <Card
-                        key={card.uniqueId}
-                        card={card}
-                        isSelected={isCardSelected(index)}
-                        isMatched={isCardMatched(index)}
-                        onClick={() => handleCardClick(index)}
-                    />
-                ))}
+            <div className={`grid ${gridClass} gap-3 md:gap-4 w-full max-w-lg aspect-square`}>
+                <AnimatePresence>
+                    {cards.map((card, index) => {
+                        const isSelected = selectedIndices.includes(index);
+                        const isMatched = matchedPairs.includes(card.pairId) || card.isFree;
+
+                        if (card.isFree) {
+                            return (
+                                <motion.div
+                                    key={card.id}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className="relative aspect-square rounded-2xl bg-slate-100 border-4 border-slate-200 flex items-center justify-center shadow-inner"
+                                >
+                                    <span className="text-4xl filter grayscale opacity-50">🤖</span>
+                                </motion.div>
+                            );
+                        }
+
+                        return (
+                            <motion.button
+                                key={card.id}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{
+                                    scale: isMatched ? 0.9 : 1,
+                                    opacity: isMatched ? 0.5 : 1,
+                                    rotate: isSelected ? [0, 5, -5, 0] : 0
+                                }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleCardClick(index)}
+                                disabled={isMatched}
+                                className={`
+                                relative aspect-square rounded-2xl flex items-center justify-center shadow-[0_6px_0_0_rgb(0,0,0,0.2)]
+                                transition-colors border-2 border-white/20
+                                ${card.color}
+                                ${isSelected ? 'ring-4 ring-white ring-offset-2 ring-offset-slate-100 z-10' : ''}
+                            `}
+                            >
+                                <span className="text-4xl md:text-5xl font-black text-white drop-shadow-md">
+                                    {card.content}
+                                </span>
+                                {isMatched && (
+                                    <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-2xl"
+                                    >
+                                        <span className="text-3xl">✅</span>
+                                    </motion.div>
+                                )}
+                            </motion.button>
+                        );
+                    })}
+                </AnimatePresence>
             </div>
 
-            {/* Game Over Modal */}
-            <AnimatePresence>
-                {isGameComplete && (
+            {/* Completion Screen Overlay */}
+            {isGameComplete && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white rounded-3xl p-8 w-full max-w-md text-center shadow-2xl"
                     >
-                        <motion.div
-                            initial={{ scale: 0.8, y: 50 }}
-                            animate={{ scale: 1, y: 0 }}
-                            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center border-4 border-yellow-400"
-                        >
-                            <div className="text-6xl mb-4">🌟</div>
-                            <h2 className="text-3xl font-black text-slate-800 mb-2">Super Detective!</h2>
-                            <p className="text-slate-600 mb-6">You found all the matching shapes!</p>
+                        <div className="text-6xl mb-4">🎉</div>
+                        <h2 className="text-3xl font-black text-slate-800 mb-2">Great Job!</h2>
+                        <p className="text-slate-500 mb-6">You matched all the confusing letters.</p>
 
-                            <div className="bg-slate-50 rounded-2xl p-4 mb-8 grid grid-cols-3 gap-2">
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-slate-500 font-semibold">Total</span>
-                                    <span className="text-2xl font-bold text-indigo-600">{attempts}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-slate-500 font-semibold">Correct</span>
-                                    <span className="text-2xl font-bold text-emerald-500">{matchedPairs.length}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-slate-500 font-semibold">Mistakes</span>
-                                    <span className="text-2xl font-bold text-rose-500">{attempts - matchedPairs.length}</span>
-                                </div>
+                        <div className="bg-slate-50 rounded-2xl p-6 mb-8 border-2 border-slate-100 flex justify-around">
+                            <div>
+                                <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Time</div>
+                                <div className="text-4xl font-mono font-black text-indigo-600">{formatTime(timeElapsed)}</div>
                             </div>
+                            <div>
+                                <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Mistakes</div>
+                                <div className="text-4xl font-mono font-black text-red-500">{wrongAttempts}</div>
+                            </div>
+                        </div>
 
-                            <div className="flex gap-3 justify-center">
-                                <button
-                                    onClick={onBack}
-                                    className="px-6 py-3 rounded-2xl font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 transition-colors"
-                                >
-                                    Exit
-                                </button>
-                                <button
-                                    onClick={initializeGame}
-                                    className="px-6 py-3 rounded-2xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl transition-all"
-                                >
-                                    Play Again ↺
-                                </button>
-                            </div>
-                        </motion.div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <button onClick={() => setDifficulty(null)} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                                Menu
+                            </button>
+                            <button onClick={() => startGame(difficulty)} className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-lg">
+                                Play Again
+                            </button>
+                        </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                </div>
+            )}
         </div>
-    );
-};
-
-// Extracted Card Component
-const Card = ({ card, isSelected, isMatched, onClick }) => {
-    // Variants for animation
-    const variants = {
-        idle: { scale: 1, rotate: 0 },
-        selected: { scale: 1.1, rotate: [0, -2, 2, 0] }, // wiggle when selected
-        matched: { scale: 0.9, opacity: 0.4 } // fade out when matched
-    };
-
-    return (
-        <motion.div
-            className={`relative w-20 h-28 sm:w-24 sm:h-32 cursor-pointer select-none`}
-            onClick={onClick}
-            variants={variants}
-            initial="idle"
-            animate={isMatched ? "matched" : isSelected ? "selected" : "idle"}
-            whileHover={!isMatched && !isSelected ? { scale: 1.05 } : {}}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        >
-            <div
-                className={`
-                    w-full h-full rounded-2xl shadow-md flex items-center justify-center border-4 
-                    ${isSelected ? 'border-indigo-600 ring-4 ring-indigo-200' : 'border-white'} 
-                    ${card.color}
-                    transition-all duration-300
-                `}
-            >
-                {/* 
-                    Using a serif or specific font can help, but standard sans-serif is often ambiguous.
-                    We use a large font size. 
-                */}
-                <span className="text-6xl font-black text-white drop-shadow-md pb-2 font-mono">
-                    {card.content}
-                </span>
-            </div>
-
-            {/* Orientation Line: helps identify bottom of card (cardinality) */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-8 h-1 bg-black/10 rounded-full" />
-        </motion.div>
     );
 };

@@ -1,53 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Game Constants
-const GAME_DURATION_SEC = 90;
-const ROAD_LANES = 2;
-const OBSTACLE_SPWAN_RATE_MS = 1500;
-const TURN_EVENT_INTERVAL_MS = 10000; // Turn event every 10s
-const TURN_WINDOW_MS = 4000; // 4s to react
-const GAME_SPEED = 0.8; // Vertical speed percent per frame
+const GAME_DURATION_SEC = 60;
+
+const DIFFICULTY_CONFIG = {
+    EASY: { lanes: 2, obstaclesPerWave: 1, label: 'Easy', color: 'from-green-400 to-emerald-500', speed: 0.3, spawnRate: 4500, carScale: 0.5 },
+    MEDIUM: { lanes: 3, obstaclesPerWave: 2, label: 'Medium', color: 'from-yellow-400 to-amber-500', speed: 0.3, spawnRate: 4000, carScale: 0.4 },
+    HARD: { lanes: 4, obstaclesPerWave: 3, label: 'Hard', color: 'from-red-500 to-rose-600', speed: 0.3, spawnRate: 3500, carScale: 0.3 }
+};
 
 export const CerebralCarGame = ({ onBack }) => {
     // Game State
+    const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD'
     const [isPlaying, setIsPlaying] = useState(false);
     const [timeLeft, setTimeLeft] = useState(GAME_DURATION_SEC);
     const [score, setScore] = useState({
-        validTurns: 0,
-        invalidTurns: 0,
-        totalObstacles: 0,
-        collisions: 0
+        validDodges: 0,
+        missedDodges: 0,
+        collisions: 0,
+        totalWaves: 0
     });
-    const [playerLane, setPlayerLane] = useState(0); // 0: Left, 1: Right
-    const [obstacles, setObstacles] = useState([]); // Array of { id, lane, y, type }
-    const [turnInstruction, setTurnInstruction] = useState(null); // null, 'LEFT', 'RIGHT'
-    const [turnStatus, setTurnStatus] = useState(null); // 'SUCCESS', 'MISSED', null
+
+    // Player State
+    const [playerLane, setPlayerLane] = useState(0);
+    const [obstacles, setObstacles] = useState([]);
+
+    // Instruction State
+    const [dodgeInstruction, setDodgeInstruction] = useState(null); // { targetLane: number, active: boolean }
+    const [feedback, setFeedback] = useState(null); // 'GOOD', 'CRASH'
     const [isGameOver, setIsGameOver] = useState(false);
 
-    // New: World Rotation State for visual turn effect
-    const [worldRotation, setWorldRotation] = useState(0);
+    // Audio Refs (Placeholder)
 
-    // New: Road Segments
-    // We visualize road as moving segments. 
-    // Type: 'STRAIGHT' | 'TURN_LEFT' | 'TURN_RIGHT'
-    const [roadSegments, setRoadSegments] = useState([]);
-
-    // Refs for game loop logic
+    // Refs
     const gameLoopRef = useRef();
     const lastTimeRef = useRef();
-    const scoreRef = useRef(score);
     const playerLaneRef = useRef(playerLane);
     const obstaclesRef = useRef(obstacles);
-    const turnInstructionRef = useRef(turnInstruction);
 
-    // Sync refs
-    useEffect(() => { scoreRef.current = score; }, [score]);
+    // Sync Refs
     useEffect(() => { playerLaneRef.current = playerLane; }, [playerLane]);
     useEffect(() => { obstaclesRef.current = obstacles; }, [obstacles]);
-    useEffect(() => { turnInstructionRef.current = turnInstruction; }, [turnInstruction]);
 
-    // Timer Effect
+    // Timer
     useEffect(() => {
         if (!isPlaying || isGameOver) return;
         const interval = setInterval(() => {
@@ -62,16 +57,51 @@ export const CerebralCarGame = ({ onBack }) => {
         return () => clearInterval(interval);
     }, [isPlaying, isGameOver]);
 
-    // Input Handling
+    // Controls
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (!isPlaying || isGameOver) return;
-            if (e.key === 'ArrowLeft') movePlayer(0);
-            else if (e.key === 'ArrowRight') movePlayer(1);
+            if (!isPlaying || isGameOver || !difficulty) return;
+            const lanes = DIFFICULTY_CONFIG[difficulty].lanes;
+
+            if (e.key === 'ArrowLeft') {
+                movePlayer(-1);
+            } else if (e.key === 'ArrowRight') {
+                movePlayer(1);
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isPlaying, isGameOver]);
+    }, [isPlaying, isGameOver, difficulty]);
+
+    const movePlayer = (direction) => {
+        const lanes = DIFFICULTY_CONFIG[difficulty].lanes;
+        setPlayerLane(prev => {
+            const next = prev + direction;
+            if (next >= 0 && next < lanes) return next;
+            return prev;
+        });
+    };
+
+    const startGame = (level) => {
+        setDifficulty(level);
+        const config = DIFFICULTY_CONFIG[level];
+        // Start in middle-ish lane
+        const startLane = Math.floor(config.lanes / 2);
+        setPlayerLane(startLane);
+
+        setIsPlaying(true);
+        setIsGameOver(false);
+        setTimeLeft(GAME_DURATION_SEC);
+        setScore({ validDodges: 0, missedDodges: 0, collisions: 0, totalWaves: 0 });
+        setObstacles([]);
+        setDodgeInstruction(null);
+    };
+
+    const endGame = () => {
+        setIsGameOver(true);
+        setIsPlaying(false);
+        cancelAnimationFrame(gameLoopRef.current);
+    };
 
     // Game Loop
     useEffect(() => {
@@ -81,224 +111,203 @@ export const CerebralCarGame = ({ onBack }) => {
         }
 
         let lastSpawn = 0;
-
-        // Initial segments (just linear road)
-        const initialSegments = [];
-        for (let i = 0; i < 6; i++) {
-            initialSegments.push({ id: i, y: i * 20 - 20, type: 'STRAIGHT' });
-        }
-        setRoadSegments(initialSegments);
+        const config = DIFFICULTY_CONFIG[difficulty];
 
         const loop = (time) => {
             if (!lastTimeRef.current) lastTimeRef.current = time;
             const delta = time - lastTimeRef.current;
             lastTimeRef.current = time;
 
-            // Spawn Obstacles
-            if (time - lastSpawn > OBSTACLE_SPWAN_RATE_MS) {
-                spawnObstacle();
+            // Spawn Logic
+            if (time - lastSpawn > config.spawnRate) {
+                spawnWave();
                 lastSpawn = time;
             }
 
-            updateGameObjects(delta);
+            updateGameObjects();
             gameLoopRef.current = requestAnimationFrame(loop);
         };
 
         gameLoopRef.current = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(gameLoopRef.current);
-    }, [isPlaying, isGameOver]);
+    }, [isPlaying, isGameOver, difficulty]);
 
-    const startGame = () => {
-        setIsPlaying(true);
-        setIsGameOver(false);
-        setTimeLeft(GAME_DURATION_SEC);
-        setScore({ validTurns: 0, invalidTurns: 0, totalObstacles: 0, collisions: 0 });
-        setObstacles([]);
-        setTurnInstruction(null);
-        setPlayerLane(0);
-    };
+    const spawnWave = () => {
+        const config = DIFFICULTY_CONFIG[difficulty];
+        const lanes = config.lanes;
+        const obsCount = config.obstaclesPerWave;
 
-    const endGame = () => {
-        setIsGameOver(true);
-        setIsPlaying(false);
-    };
+        // Strategy:
+        // We need to spawn 'obsCount' obstacles.
+        // We MUST leave at least one lane open? 
+        // Logic:
+        // Easy (2 lanes, 1 obs): 1 open.
+        // Medium (3 lanes, 2 obs): 1 open.
+        // Hard (4 lanes, 3 obs): 1 open.
+        // ALWAYS 1 lane open is the standard runner rule.
 
-    const spawnObstacle = () => {
-        // High chance to spawn in Player's current lane to force movement?
-        // Or random?
-        // User wants: "signal to move when a obstacle vehincle comes on that lane and user is on that lane"
+        // Determination of "Safe Lane" logic
+        // We want to force movement.
+        // 60% chance to block CURRENT lane.
 
-        // Let's spawn in the lane the player is currently in to trigger the "Cerebral" reaction test.
-        // 60% chance to spawn in player lane.
-        const targetLane = Math.random() < 0.6 ? playerLaneRef.current : (playerLaneRef.current === 0 ? 1 : 0);
+        let availableLanes = Array.from({ length: lanes }, (_, i) => i);
+        let blockedLanes = [];
 
-        const newObstacle = {
+        // Decide which lanes to block
+        // Random shuffle available
+        availableLanes.sort(() => Math.random() - 0.5);
+
+        // Take first N lanes
+        for (let i = 0; i < obsCount; i++) {
+            blockedLanes.push(availableLanes[i]);
+        }
+
+        const newObstacles = blockedLanes.map(lane => ({
             id: Date.now() + Math.random(),
-            lane: targetLane,
+            lane: lane,
             y: -20,
             hasCollided: false,
-            instructionShown: false // Track if we signaled for this
-        };
-        setObstacles(prev => [...prev, newObstacle]);
-        setScore(prev => ({ ...prev, totalObstacles: prev.totalObstacles + 1 }));
+            instructionShown: false
+        }));
+
+        setObstacles(prev => [...prev, ...newObstacles]);
+        setScore(s => ({ ...s, totalWaves: s.totalWaves + 1 }));
     };
 
-    const movePlayer = (targetLane) => {
-        // Did we move in response to an instruction?
-        const currentInstruction = turnInstructionRef.current; // 'LEFT' or 'RIGHT'
-        const previousLane = playerLaneRef.current;
-
-        setPlayerLane(targetLane);
-
-        // Validation Logic
-        // If there was an instruction (meaning impending crash), and we moved to safe lane:
-        if (currentInstruction) {
-            // Instruction 'LEFT' means "Go Left". Target is 0.
-            // Instruction 'RIGHT' means "Go Right". Target is 1.
-            const requiredLane = currentInstruction === 'LEFT' ? 0 : 1;
-
-            if (targetLane === requiredLane) {
-                // Success! We moved to safe lane.
-                handleTurnResult(true);
-            }
-        }
-    };
-
-    const handleTurnResult = (success) => {
-        setTurnInstruction(null);
-        if (success) {
-            setScore(prev => ({ ...prev, validTurns: prev.validTurns + 1 }));
-            setTurnStatus('SUCCESS');
-        } else {
-            // We only count invalid turns if they actually crash, which is handled in collision logic?
-            // Or if they move to WRONG lane?
-            // For now, simple success feedback.
-        }
-        setTimeout(() => setTurnStatus(null), 1000);
-    };
-
-    const updateGameObjects = (delta) => {
-        // Update Road
-        setRoadSegments(prev => {
-            // Simple scrolling
-            let next = prev.map(s => ({ ...s, y: s.y + GAME_SPEED }));
-            if (next[next.length - 1].y >= 0 && next.length < 8) {
-                // Add new segment at top
-                // Find min y
-                const minY = next[0].y;
-                next.unshift({ id: Date.now(), y: minY - 20, type: 'STRAIGHT' });
-            }
-            return next.filter(s => s.y < 120);
-        });
-
-        // Update Obstacles & Logic
+    const updateGameObjects = () => {
         setObstacles(prev => {
-            const nextObstacles = [];
-            let collisionDetect = 0;
+            const nextObs = [];
             const playerY = 80;
             const currentLane = playerLaneRef.current;
+            const config = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.EASY;
 
-            // Logic to determine if we should show instruction
-            // Find the closest incoming obstacle in MY LANE
-            const limitY = 40; // Look ahead
+            // 1. Identify safe lanes
+            // A lane is "blocked" if there is an obstacle in the "danger zone" (roughly y=-25 to y=90)
+            const blockedLanes = new Set();
+            prev.forEach(o => {
+                if (o.y > -25 && o.y < 90) { // Broad range to match player area
+                    blockedLanes.add(o.lane);
+                }
+            });
 
-            // Check for instructions
-            // Use a ref-based approach or just find first dangerous obstacle
-            // We do this outside the map to avoid multi-set
+            let foundInstruction = null;
 
             prev.forEach(obs => {
-                obs.y += GAME_SPEED;
+                obs.y += config.speed;
 
-                // Alert Logic
-                // If obstacle is in Player Lane, coming down (y > -10), and we haven't shown instruction yet
-                if (!obs.instructionShown && obs.lane === currentLane && obs.y > -10 && obs.y < 40) {
-                    obs.instructionShown = true;
-                    // Signal to move AWAY
-                    const safeLane = currentLane === 0 ? 1 : 0;
-                    setTurnInstruction(safeLane === 0 ? 'LEFT' : 'RIGHT');
-                }
+                // Instruction Trigger
+                // If obstacle is in Player Lane, arriving soon
+                if (obs.lane === currentLane && obs.y > -15 && obs.y < 60) {
+                    // Check Left
+                    const canGoLeft = currentLane > 0 && !blockedLanes.has(currentLane - 1);
+                    const canGoRight = currentLane < config.lanes - 1 && !blockedLanes.has(currentLane + 1);
 
-                // If we moved away, clear instruction?
-                if (turnInstructionRef.current && obs.instructionShown && obs.lane !== currentLane) {
-                    // We are safe now.
-                    // Instruction cleared in movePlayer, but also here failsafe?
-                    setTurnInstruction(null);
+                    if (canGoLeft && canGoRight) {
+                        // Both open, random
+                        foundInstruction = Math.random() < 0.5 ? 'LEFT' : 'RIGHT';
+                    } else if (canGoLeft) {
+                        foundInstruction = 'LEFT';
+                    } else if (canGoRight) {
+                        foundInstruction = 'RIGHT';
+                    } else {
+                        // Both blocked or invalid. Prioritize valid move even if dangerous.
+                        if (currentLane > 0) foundInstruction = 'LEFT';
+                        else if (currentLane < config.lanes - 1) foundInstruction = 'RIGHT';
+                    }
                 }
 
                 // Collision
                 if (
                     !obs.hasCollided &&
                     obs.lane === currentLane &&
-                    obs.y + 10 >= playerY && obs.y <= playerY + 15
+                    obs.y + 5 >= playerY && obs.y <= playerY + 15
                 ) {
                     obs.hasCollided = true;
-                    collisionDetect++;
-                    // If we collide, it means we monitored an Invalid Turn (did not move)
-                    if (obs.instructionShown) {
-                        setScore(s => ({ ...s, invalidTurns: s.invalidTurns + 1 }));
-                        setTurnStatus('MISSED');
-                        setTurnInstruction(null);
-                        setTimeout(() => setTurnStatus(null), 1000);
-                    }
+                    setScore(s => ({ ...s, collisions: s.collisions + 1 }));
+                    setFeedback('CRASH');
+                    setTimeout(() => setFeedback(null), 800);
                 }
 
-                if (obs.y < 120) nextObstacles.push(obs);
+                if (obs.y < 120) nextObs.push(obs);
             });
 
-            if (collisionDetect > 0) {
-                // Sync collision score
-                // handled in effect or here
+            // Side effect set instruction
+            if (foundInstruction) {
+                setDodgeInstruction({ direction: foundInstruction });
+            } else {
+                setDodgeInstruction(null);
             }
-            return nextObstacles;
-        });
 
-        setObstacles(current => {
-            const collided = current.filter(o => o.hasCollided && !o.counted);
-            if (collided.length > 0) {
-                setScore(s => ({ ...s, collisions: s.collisions + collided.length }));
-                return current.map(o => o.hasCollided ? { ...o, counted: true } : o);
-            }
-            return current;
+            return nextObs;
         });
     };
 
-    if (!isPlaying && !isGameOver) {
+    // -- RENDERING --
+
+    if (!difficulty) {
         return (
-            <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-8 text-center min-h-[60vh]">
-                <h2 className="text-4xl font-bold text-slate-800 mb-4">Cerebral Racer 🏎️</h2>
-                <p className="text-slate-600 mb-8 max-w-md mx-auto text-lg">
-                    Drive your car and dodge the traffic! <br />
-                    When you see a <b>TURN</b>, drive to that side and press the arrow key!
+            <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-8 min-h-[60vh]">
+                <h2 className="text-4xl font-bold text-slate-800 mb-2">Cerebral Racer 🏎️</h2>
+                <p className="text-slate-500 mb-8 text-center max-w-md">
+                    Choose your difficulty. Dodge the traffic!
                 </p>
-                <div className="flex gap-4 justify-center">
-                    <button onClick={onBack} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
-                        Back
-                    </button>
-                    <button onClick={startGame} className="px-8 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all text-xl">
-                        Start Engine! 🏁
-                    </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
+                    {Object.keys(DIFFICULTY_CONFIG).map(key => {
+                        const level = DIFFICULTY_CONFIG[key];
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => startGame(key)}
+                                className={`
+                                    flex flex-col items-center justify-center p-8 rounded-3xl 
+                                    bg-white border-4 shadow-xl hover:scale-105 transition-transform
+                                    border-slate-200
+                                `}
+                            >
+                                <span className={`text-3xl font-black bg-gradient-to-r ${level.color} bg-clip-text text-transparent mb-2`}>{level.label}</span>
+                                <div className="text-slate-400 font-bold text-sm">
+                                    {level.lanes} Lanes <br />
+                                    {level.obstaclesPerWave} Cars at once
+                                </div>
+                            </button>
+                        );
+                    })}
                 </div>
+                <button onClick={onBack} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                    Back to Menu
+                </button>
             </div>
         );
     }
 
+    // In-Game Render
+    const config = DIFFICULTY_CONFIG[difficulty];
+    const laneWidthPercent = 100 / config.lanes;
+
     return (
         <div className="relative w-full max-w-2xl mx-auto h-[80vh] bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-700">
-            {/* Background Road Layer */}
-            <div className="absolute inset-0 bg-slate-800 overflow-hidden">
-                {/* Render Segments */}
-                {roadSegments.map(segment => (
-                    <RoadSegment key={segment.id} y={segment.y} />
+            {/* Road Surface */}
+            <div className="absolute inset-0 flex">
+                {Array.from({ length: config.lanes }).map((_, i) => (
+                    <div key={i} className="h-full border-r-2 border-dashed border-white/20 relative" style={{ width: `${laneWidthPercent}%` }}>
+                        {/* Lane Number (optional debugging) */}
+                        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-white/10 text-4xl font-black">{i + 1}</span>
+                    </div>
                 ))}
             </div>
+
+            {/* Moving Road Texture (Simulated) */}
+            <RoadLines speed={config.speed} />
 
             {/* Obstacles */}
             {obstacles.map(obs => (
                 <div
                     key={obs.id}
-                    className="absolute z-10 w-[20%] max-w-[80px] transition-transform"
+                    className="absolute z-10 transition-transform"
                     style={{
-                        left: obs.lane === 0 ? '25%' : '75%',
+                        width: `${laneWidthPercent * config.carScale}%`, // Dynamic car size
+                        left: `${(obs.lane * laneWidthPercent) + (laneWidthPercent / 2)}%`,
                         top: `${obs.y}%`,
                         transform: 'translateX(-50%)'
                     }}
@@ -316,12 +325,15 @@ export const CerebralCarGame = ({ onBack }) => {
 
             {/* Player Car */}
             <motion.div
-                className="absolute bottom-20 z-20 w-[20%] max-w-[80px]"
+                className="absolute bottom-20 z-20"
                 animate={{
-                    left: playerLane === 0 ? '25%' : '75%',
+                    left: `${(playerLane * laneWidthPercent) + (laneWidthPercent / 2)}%`,
                 }}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                style={{ translateX: "-50%" }}
+                transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                style={{
+                    width: `${laneWidthPercent * config.carScale}%`, // Dynamic player size
+                    translateX: "-50%"
+                }}
             >
                 <div className="w-full aspect-[2/3] bg-blue-500 rounded-2xl shadow-lg border-4 border-blue-300 relative overflow-hidden group">
                     <div className="absolute top-2 left-2 right-2 h-[20%] bg-sky-900/50 rounded-sm"></div>
@@ -338,57 +350,45 @@ export const CerebralCarGame = ({ onBack }) => {
                     <span className="text-xs opacity-80 uppercase tracking-widest">Time</span>
                     <span className="text-2xl font-mono font-bold">{Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}</span>
                 </div>
-                <div className="flex flex-col items-end gap-1 bg-black/40 p-2 rounded-xl backdrop-blur-sm">
-                    <span className="text-xs opacity-80 text-white uppercase tracking-widest">Dodged</span>
-                    <span className="text-xl font-bold text-yellow-400">{score.totalObstacles}</span>
+                <div className="flex flex-col items-end gap-1 bg-black/40 p-2 rounded-xl backdrop-blur-sm text-white">
+                    <span className="text-xs opacity-80 uppercase tracking-widest">Crashes</span>
+                    <span className="text-xl font-bold text-red-500">{score.collisions}</span>
                 </div>
             </div>
 
-            {/* Mobile Controls */}
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between z-40 md:hidden pointer-events-auto">
-                <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full text-4xl shadow-lg active:scale-90 transition-transform" onClick={() => movePlayer(0)}>⬅️</button>
-                <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full text-4xl shadow-lg active:scale-90 transition-transform" onClick={() => movePlayer(1)}>➡️</button>
-            </div>
-
-            {/* Interaction Feedback / Warning */}
+            {/* Feedback Overlay */}
             <AnimatePresence>
-                {turnInstruction && (
+                {dodgeInstruction && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute bottom-40 left-0 right-0 z-40 flex justify-center pointer-events-none"
                     >
-                        <div className={`
-                            bg-white/90 backdrop-blur border-4 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3
-                            ${turnInstruction === 'LEFT' ? 'border-indigo-500' : 'border-indigo-500'}
-                       `}>
-                            <span className="text-4xl">{turnInstruction === 'LEFT' ? '⬅️' : '➡️'}</span>
-                            <div>
-                                <h3 className="text-xl font-black text-rose-600 uppercase">DODGE!</h3>
-                                <p className="text-xs font-bold text-slate-500">Go {turnInstruction}!</p>
-                            </div>
+                        <div className="bg-white/95 backdrop-blur-xl border-4 border-indigo-600 px-10 py-6 rounded-3xl shadow-2xl flex flex-col items-center gap-2">
+                            <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">Dodge</div>
+                            <span className="text-6xl font-black text-rose-600 tracking-wider font-mono drop-shadow-sm">{dodgeInstruction.direction}</span>
                         </div>
+                    </motion.div>
+                )}
+
+                {feedback === 'CRASH' && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1.5 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 text-6xl"
+                    >
+                        💥
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {turnStatus && (
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1.2, opacity: 1 }}
-                        exit={{ scale: 1.5, opacity: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
-                    >
-                        {turnStatus === 'SUCCESS' ? (
-                            <div className="text-6xl md:text-8xl font-black text-emerald-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] stroke-black">VALID!</div>
-                        ) : (
-                            <div className="text-6xl md:text-8xl font-black text-rose-500 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">HIT!</div>
-                        )}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Mobile Controls Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between z-40 md:hidden pointer-events-auto">
+                <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full text-4xl shadow-lg active:scale-90 transition-transform" onClick={() => movePlayer(-1)}>⬅️</button>
+                <button className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-full text-4xl shadow-lg active:scale-90 transition-transform" onClick={() => movePlayer(1)}>➡️</button>
+            </div>
 
             {/* Game Over Screen */}
             {isGameOver && (
@@ -396,14 +396,14 @@ export const CerebralCarGame = ({ onBack }) => {
                     <div className="bg-white rounded-3xl p-8 w-full max-w-md text-center">
                         <h2 className="text-3xl font-black text-slate-800 mb-6">Race Finished! 🏁</h2>
                         <div className="grid grid-cols-2 gap-4 mb-8">
-                            <StatBox label="Valid Dodges" value={score.validTurns} color="text-indigo-600" />
+                            <StatBox label="Valid Waves" value={score.totalWaves - score.collisions} color="text-indigo-600" />
                             <StatBox label="Crashes" value={score.collisions} color="text-red-600" />
-                            <StatBox label="Total Cars" value={score.totalObstacles} color="text-amber-500" />
-                            <StatBox label="Score" value={score.validTurns * 10 - score.collisions * 5} color="text-emerald-600" />
+                            <StatBox label="Total Waves" value={score.totalWaves} color="text-amber-500" />
+                            <StatBox label="Score" value={(score.totalWaves - score.collisions) * 100} color="text-emerald-600" />
                         </div>
                         <div className="flex gap-4 justify-center">
-                            <button onClick={onBack} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">Exit</button>
-                            <button onClick={startGame} className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700">Race Again</button>
+                            <button onClick={() => setDifficulty(null)} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">Menu</button>
+                            <button onClick={() => startGame(difficulty)} className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700">Race Again</button>
                         </div>
                     </div>
                 </div>
@@ -412,25 +412,33 @@ export const CerebralCarGame = ({ onBack }) => {
     );
 };
 
-const RoadSegment = ({ y }) => {
+// Simple animated lines to give speed sensation
+const RoadLines = ({ speed }) => {
+    const [offset, setOffset] = useState(0);
+    const reqRef = useRef();
+
+    useEffect(() => {
+        let lastTime;
+        const loop = (time) => {
+            if (!lastTime) lastTime = time;
+            const delta = time - lastTime;
+            // Speed factor
+            setOffset(prev => (prev + speed * 1.5) % 100);
+            reqRef.current = requestAnimationFrame(loop);
+        };
+        reqRef.current = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(reqRef.current);
+    }, [speed]);
+
     return (
         <div
-            className="absolute left-0 right-0 h-[25%] pointer-events-none flex justify-center items-center"
+            className="absolute inset-0 pointer-events-none opacity-20"
             style={{
-                top: `${y}%`,
-                height: '25%'
+                backgroundImage: 'repeating-linear-gradient(to bottom, transparent, transparent 50px, rgba(255,255,255,0.5) 50px, rgba(255,255,255,0.5) 100px)',
+                backgroundPosition: `0 ${offset}%`,
+                backgroundSize: '100% 100px'
             }}
-        >
-            {/* The Main Road Strip */}
-            <div className="relative w-[70%] h-full bg-slate-700 border-x-4 border-white/20 overflow-visible">
-                {/* Lane Divider */}
-                <div className="absolute inset-y-0 left-1/2 w-2 border-r-2 border-dashed border-white/40 -translate-x-1/2"></div>
-
-                {/* Side Grass */}
-                <div className="absolute top-0 bottom-0 right-[100%] w-[100px] bg-emerald-800 border-r-4 border-slate-600 opacity-50"></div>
-                <div className="absolute top-0 bottom-0 left-[100%] w-[100px] bg-emerald-800 border-l-4 border-slate-600 opacity-50"></div>
-            </div>
-        </div>
+        />
     );
 };
 

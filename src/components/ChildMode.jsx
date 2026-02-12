@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { MrBingoCharacter } from "./MrBingoCharacter.jsx";
 import { LetterMatchingGame } from "./LetterMatchingGame.jsx";
 import { CerebralCarGame } from "./CerebralCarGame.jsx";
+import DiagnosticRecorder from "./DiagnosticRecorder.jsx";
+import { EmotionGame } from "./EmotionGame.jsx";
 
 const cardVariants = {
   initial: { y: 12, opacity: 0 },
@@ -16,10 +18,10 @@ const cardVariants = {
 const cards = [
   {
     id: "adventure",
-    title: "Start Adventure",
-    description: "Choose a playful path and learn with Mr. Bingo.",
+    title: "Dyslexia Screening",
+    description: "Match identical letters (b-b). Watch for lookalikes!",
     color: "from-bingo-yellow to-bingo-coral",
-    icon: "🌈"
+    icon: "🧩"
   },
   {
     id: "racer",
@@ -34,6 +36,20 @@ const cards = [
     description: "A tiny challenge crafted just for today.",
     color: "from-bingo-mint to-bingo-blue",
     icon: "🎯"
+  },
+  {
+    id: "diagnostic",
+    title: "Focus Diagnostic",
+    description: "Test your focus with a fun red dot game!",
+    color: "from-purple-400 to-pink-500",
+    icon: "👁️"
+  },
+  {
+    id: "emotions",
+    title: "Emotion Explorer",
+    description: "Can you guess the feeling? Fun picture quiz!",
+    color: "from-orange-400 to-amber-500",
+    icon: "🧐"
   },
   {
     id: "stars",
@@ -53,6 +69,14 @@ export function ChildMode() {
 
   if (activeGame === 'cerebral-racer') {
     return <CerebralCarGame onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'diagnostic') {
+    return <DiagnosticRecorder onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'emotion-game') {
+    return <EmotionGame onBack={() => setActiveGame(null)} />;
   }
 
   return (
@@ -95,6 +119,10 @@ export function ChildMode() {
                     setActiveGame('letter-match');
                   } else if (card.id === "racer") {
                     setActiveGame('cerebral-racer');
+                  } else if (card.id === "diagnostic") {
+                    setActiveGame('diagnostic');
+                  } else if (card.id === "emotions") {
+                    setActiveGame('emotion-game');
                   }
                 }}
                 className="group relative flex flex-col items-center justify-between rounded-3xl bg-white/90 px-4 py-4 sm:px-3 sm:py-5 shadow-soft border border-white/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/70"
