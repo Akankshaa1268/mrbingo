@@ -8,16 +8,16 @@ module.exports = {
       },
       colors: {
         bingo: {
-          blue: "#BFE5FF",
-          mint: "#C8F2E2",
-          yellow: "#FFF4BF",
-          lavender: "#E5D9FF",
-          coral: "#FFB5A7",
-          navy: "#1E2A3B"
+          blue: "rgb(var(--color-bingo-blue) / <alpha-value>)",
+          mint: "rgb(var(--color-bingo-mint) / <alpha-value>)",
+          yellow: "rgb(var(--color-bingo-yellow) / <alpha-value>)",
+          lavender: "rgb(var(--color-bingo-lavender) / <alpha-value>)",
+          coral: "rgb(var(--color-bingo-coral) / <alpha-value>)",
+          navy: "rgb(var(--color-bingo-navy) / <alpha-value>)"
         }
       },
       boxShadow: {
-        soft: "0 18px 45px rgba(15, 23, 42, 0.08)"
+        soft: "var(--shadow-soft)"
       },
       borderRadius: {
         "3xl": "1.75rem",
