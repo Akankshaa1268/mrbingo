@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 
 // --- Mock Data for Dashboard ---
@@ -419,28 +419,91 @@ function ActivityPlans() {
 }
 
 function Chatbot() {
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Hello! How can I support you and your child today?", sender: 'bot' }
+  ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  const getBotResponse = (text) => {
+    const lower = text.toLowerCase();
+    if (lower.includes('skill') || lower.includes('reading')) return "For reading skills, I recommend the 'Letter Matching' adventure. It builds phonemic awareness gently.";
+    if (lower.includes('calm') || lower.includes('meltdown')) return "Sensory regulation is key. Try the 'Breathing Bubble' activity or a heavy work break.";
+    if (lower.includes('iep') || lower.includes('school')) return "For IEPs, focusing on 'measurable goals' is important. I can help draft specific requests for accommodations.";
+    return "I'm here to listen and support. Could you tell me more about that?";
+  };
+
+  const handleSend = () => {
+    if (!input.trim()) return;
+
+    const userText = input;
+    setMessages(prev => [...prev, { id: Date.now(), text: userText, sender: 'user' }]);
+    setInput("");
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const botText = getBotResponse(userText);
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: botText, sender: 'bot' }]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[500px] flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="bg-slate-900 p-4 text-white">
         <h3 className="font-bold">Mr. Bingo Assistant</h3>
         <p className="text-xs text-slate-300">Ask me about parenting, IEPs, or game tips!</p>
       </div>
-      <div className="flex-1 p-4 bg-slate-50 overflow-y-auto space-y-4">
-        <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs">MB</div>
-          <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-700 max-w-[80%] border border-slate-100">
-            Hello! How can I support you and your child today?
+      <div className="flex-1 p-4 bg-slate-50 overflow-y-auto space-y-4 soft-scrollbar">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+            {msg.sender === 'bot' && (
+              <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs flex-shrink-0">MB</div>
+            )}
+            <div className={`p-3 rounded-2xl shadow-sm text-sm max-w-[80%] border ${msg.sender === 'user'
+                ? 'bg-bingo-blue/20 text-slate-800 rounded-tr-none border-bingo-blue/30'
+                : 'bg-white text-slate-700 rounded-tl-none border-slate-100'
+              }`}>
+              {msg.text}
+            </div>
           </div>
-        </div>
+        ))}
+        {isTyping && (
+          <div className="flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-slate-900 flex items-center justify-center text-white text-xs flex-shrink-0">MB</div>
+            <div className="bg-white px-4 py-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 flex gap-1">
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-75"></span>
+              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
       <div className="p-4 bg-white border-t border-slate-100">
         <div className="flex gap-2">
           <input
             type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your question..."
             className="flex-1 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none"
           />
-          <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90">
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isTyping}
+            className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
             Send
           </button>
         </div>
