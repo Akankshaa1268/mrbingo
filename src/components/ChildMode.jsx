@@ -90,6 +90,7 @@ const cards = [
 export function ChildMode() {
   const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', 'memory-grid', null
   const [selectedDifficulty, setSelectedDifficulty] = React.useState("EASY");
+  const [selectedWorld, setSelectedWorld] = React.useState(null);
   const earnedStars = getActivityHistory().reduce((total, item) => {
     const percentage = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
     return total + (percentage >= 85 ? 3 : percentage >= 60 ? 2 : 1);
@@ -138,6 +139,57 @@ export function ChildMode() {
     return <StarsJourney onBack={() => setActiveGame(null)} />;
   }
 
+  if (selectedWorld) {
+    const world = cards.find((card) => card.id === selectedWorld);
+    const levels = [
+      { key: "EASY", label: "Easy", note: "A gentle start", color: "from-bingo-mint to-emerald-500" },
+      { key: "MEDIUM", label: "Medium", note: "A bigger challenge", color: "from-bingo-yellow to-orange-400" },
+      { key: "HARD", label: "Hard", note: "Ready for the star cup", color: "from-bingo-coral to-pink-600" },
+    ];
+    return (
+      <section className="game-shell max-w-4xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <div>
+            <p className="toon-kicker mb-3">Choose your level</p>
+            <h2 className="text-4xl font-bold text-bingo-navy sm:text-5xl">{world?.title}</h2>
+          </div>
+          <button onClick={() => setSelectedWorld(null)} className="toon-button-secondary">All games</button>
+        </div>
+        <div className="relative mx-auto min-h-[620px] max-w-xl overflow-hidden rounded-[3rem] border-[4px] border-bingo-navy/10 bg-gradient-to-b from-sky-200 via-amber-50 to-emerald-200 p-8 shadow-pop">
+          <div className="absolute inset-0 opacity-70" aria-hidden="true">
+            <span className="absolute left-8 top-14 text-6xl">🍭</span>
+            <span className="absolute right-8 top-32 text-5xl">☁️</span>
+            <span className="absolute bottom-24 left-10 text-6xl">🍬</span>
+            <span className="absolute bottom-10 right-8 text-6xl">🌳</span>
+          </div>
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 500 620" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M255 570 C80 500, 420 400, 245 310 C75 220, 410 140, 250 55" fill="none" stroke="white" strokeWidth="30" strokeLinecap="round" strokeDasharray="4 14" />
+            <path d="M255 570 C80 500, 420 400, 245 310 C75 220, 410 140, 250 55" fill="none" stroke="#ff5b74" strokeWidth="8" strokeLinecap="round" strokeDasharray="2 18" />
+          </svg>
+          <div className="relative z-10 flex h-[550px] flex-col justify-between py-5">
+            {levels.map((level, index) => (
+              <div key={level.key} className={`flex ${index === 1 ? "justify-end" : index === 0 ? "justify-center" : "justify-start"}`}>
+                <motion.button
+                  type="button"
+                  onClick={() => launchGame(selectedWorld, level.key)}
+                  whileHover={{ scale: 1.06, rotate: index - 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center gap-3 rounded-3xl border-[4px] border-white bg-white p-3 pr-5 text-left shadow-pop"
+                >
+                  <span className={`flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-black text-white ${level.color}`}>{index + 1}</span>
+                  <span>
+                    <span className="block font-display text-xl font-bold text-bingo-navy">{level.label}</span>
+                    <span className="text-xs font-bold text-bingo-navy/50">{level.note}</span>
+                  </span>
+                </motion.button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       aria-label="Child learning playground"
@@ -161,42 +213,29 @@ export function ChildMode() {
           </p>
 
           {/* Cards */}
-          <div className="relative mx-auto max-w-3xl space-y-6 py-5" aria-label="Learning adventure map">
-            <div className="absolute bottom-10 left-1/2 top-10 w-5 -translate-x-1/2 rounded-full bg-gradient-to-b from-bingo-yellow via-bingo-coral to-bingo-indigo opacity-30" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Main learning actions">
             {cards.filter((card) => card.id !== "challenge").map((card, i) => (
-              <motion.div
+              <motion.button
                 key={card.id}
-                className={`relative z-10 flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
+                type="button"
+                onClick={() => card.id === "stars" ? launchGame("stars", "EASY") : setSelectedWorld(card.id)}
+                className="toon-card group relative flex min-h-44 flex-col items-start justify-between overflow-hidden px-5 py-5 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/60"
                 variants={cardVariants}
                 initial="initial"
                 animate="animate"
                 custom={i}
               >
-                <div className="toon-card group relative w-[48%] min-w-64 overflow-hidden p-4">
-                  <div className={`absolute -right-8 -top-9 h-28 w-28 rounded-full opacity-20 ${card.accent}`} />
-                  <div className="relative flex items-center gap-3">
-                    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br text-3xl shadow-pop-sm ${card.color}`} aria-hidden="true">
-                      {card.icon}
-                    </div>
-                    <div>
-                      <p className="font-display text-lg font-bold leading-tight text-bingo-navy">{card.title}</p>
-                      <p className="mt-1 text-xs font-semibold text-bingo-navy/55">{card.description}</p>
-                    </div>
+                <div className={`absolute -right-8 -top-9 h-28 w-28 rounded-full opacity-20 transition-transform duration-300 group-hover:scale-125 ${card.accent}`} />
+                <div className="relative z-10 flex w-full flex-col items-start gap-4">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-bingo-navy/10 bg-gradient-to-br text-3xl shadow-pop-sm ${card.color}`} aria-hidden="true">
+                    {card.icon}
                   </div>
-                  <div className={`relative mt-4 grid gap-2 ${card.id === "stars" ? "grid-cols-1" : "grid-cols-3"}`}>
-                    {(card.id === "stars" ? ["OPEN"] : ["EASY", "MEDIUM", "HARD"]).map((level, levelIndex) => (
-                      <button
-                        key={level}
-                        type="button"
-                        onClick={() => launchGame(card.id, level === "OPEN" ? "EASY" : level)}
-                        className={`rounded-xl border-2 border-bingo-navy/10 px-2 py-2 text-[0.65rem] font-extrabold transition hover:-translate-y-0.5 ${levelIndex === 0 ? "bg-bingo-mint/35" : levelIndex === 1 ? "bg-bingo-yellow/60" : "bg-bingo-coral/25"}`}
-                      >
-                        {level[0] + level.slice(1).toLowerCase()}
-                      </button>
-                    ))}
+                  <div>
+                    <p className="font-display text-lg font-bold leading-tight text-bingo-navy">{card.title}</p>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-bingo-navy/60">{card.description}</p>
                   </div>
                 </div>
-              </motion.div>
+              </motion.button>
             ))}
           </div>
 

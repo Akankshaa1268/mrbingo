@@ -191,12 +191,19 @@ export const CerebralCarGame = ({ onBack, initialDifficulty }) => {
             blockedLanes.push(availableLanes[i]);
         }
 
-        const newObstacles = blockedLanes.map(lane => ({
+        const toyPaints = [
+            'from-orange-200 via-orange-500 to-red-900 border-yellow-200',
+            'from-lime-200 via-emerald-500 to-teal-950 border-lime-200',
+            'from-fuchsia-200 via-purple-500 to-indigo-950 border-pink-200',
+            'from-yellow-100 via-yellow-400 to-orange-800 border-white',
+        ];
+        const newObstacles = blockedLanes.map((lane, index) => ({
             id: Date.now() + Math.random(),
             lane: lane,
             y: -20,
             hasCollided: false,
-            instructionShown: false
+            instructionShown: false,
+            paint: toyPaints[(index + Math.floor(Math.random() * toyPaints.length)) % toyPaints.length],
         }));
 
         setObstacles(prev => [...prev, ...newObstacles]);
@@ -359,13 +366,14 @@ export const CerebralCarGame = ({ onBack, initialDifficulty }) => {
                     }}
                 >
                     <div className={`relative aspect-[2/3] w-full rounded-[38%_38%_20%_20%] border-4 shadow-[0_14px_22px_rgba(0,0,0,.5)]
-                        ${obs.hasCollided ? 'bg-slate-700 grayscale scale-90 rotate-12 opacity-80' : 'border-red-200 bg-gradient-to-b from-red-200 via-red-500 to-red-900'}
+                        ${obs.hasCollided ? 'bg-slate-700 grayscale scale-90 rotate-12 opacity-80' : `bg-gradient-to-b ${obs.paint}`}
                     `}>
                         {obs.hasCollided && (
                             <div className="absolute inset-0 flex items-center justify-center text-3xl">💥</div>
                         )}
                         <div className="absolute bottom-2 left-2 right-2 h-[20%] bg-sky-900/50 rounded-sm"></div>
                         <div className="absolute left-[12%] right-[12%] top-[12%] h-[25%] rounded-t-xl bg-sky-100/80" />
+                        <div className="absolute bottom-[23%] left-[8%] h-[18%] w-[70%] -skew-x-12 rounded-r-full bg-gradient-to-r from-yellow-300 via-orange-500 to-transparent opacity-90" />
                         <div className="absolute -bottom-1 -left-2 h-7 w-4 rounded-full bg-slate-950" />
                         <div className="absolute -bottom-1 -right-2 h-7 w-4 rounded-full bg-slate-950" />
                     </div>
@@ -387,6 +395,7 @@ export const CerebralCarGame = ({ onBack, initialDifficulty }) => {
                 <div className="group relative aspect-[2/3] w-full overflow-visible rounded-[38%_38%_18%_18%] border-4 border-cyan-200 bg-gradient-to-b from-cyan-200 via-blue-500 to-indigo-950 shadow-[0_18px_26px_rgba(0,0,0,.55)]">
                     <div className="absolute top-2 left-2 right-2 h-[20%] bg-sky-900/50 rounded-sm"></div>
                     <div className="absolute bottom-2 left-2 right-2 h-[10%] bg-red-500/80 rounded-sm"></div>
+                    <div className="absolute bottom-[24%] left-[7%] h-[20%] w-[74%] -skew-x-12 rounded-r-full bg-gradient-to-r from-yellow-200 via-orange-500 to-red-600 opacity-95" />
                     <div className="absolute -bottom-2 -left-2 h-8 w-4 rounded-full bg-slate-950" />
                     <div className="absolute -bottom-2 -right-2 h-8 w-4 rounded-full bg-slate-950" />
                     {/* Headlights */}
