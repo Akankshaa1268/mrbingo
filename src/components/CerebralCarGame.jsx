@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordActivity } from '../utils/activityHistory.js';
 
 const GAME_DURATION_SEC = 60;
 
@@ -37,6 +38,7 @@ export const CerebralCarGame = ({ onBack }) => {
     const lastTimeRef = useRef();
     const playerLaneRef = useRef(playerLane);
     const obstaclesRef = useRef(obstacles);
+    const recordedResultRef = useRef(false);
 
     // Sync Refs
     useEffect(() => { playerLaneRef.current = playerLane; }, [playerLane]);
@@ -95,6 +97,7 @@ export const CerebralCarGame = ({ onBack }) => {
         setScore({ validDodges: 0, missedDodges: 0, collisions: 0, totalWaves: 0 });
         setObstacles([]);
         setDodgeInstruction(null);
+        recordedResultRef.current = false;
     };
 
     const endGame = () => {
@@ -102,6 +105,20 @@ export const CerebralCarGame = ({ onBack }) => {
         setIsPlaying(false);
         cancelAnimationFrame(gameLoopRef.current);
     };
+
+    useEffect(() => {
+        if (!isGameOver || recordedResultRef.current || !difficulty) return;
+        const successfulWaves = Math.max(0, score.totalWaves - score.collisions);
+        recordActivity({
+            activity: `Cerebral Racer — ${DIFFICULTY_CONFIG[difficulty].label}`,
+            skill: 'coordination',
+            score: successfulWaves,
+            maxScore: Math.max(1, score.totalWaves),
+            durationSeconds: GAME_DURATION_SEC - timeLeft,
+            details: { difficulty, collisions: score.collisions },
+        });
+        recordedResultRef.current = true;
+    }, [difficulty, isGameOver, score, timeLeft]);
 
     // Game Loop
     useEffect(() => {

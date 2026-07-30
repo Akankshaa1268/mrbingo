@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
+import { recordActivity } from '../utils/activityHistory.js';
 
 // --- DATA STRUCTURE FOR EMOTIONS ---
 // NOTE: Since these are static assets, we hardcode the known files from your project structure.
@@ -54,16 +56,35 @@ export const EmotionGame = ({ onBack }) => {
     const [gameState, setGameState] = useState('menu'); // menu, playing, feedback, result
     const [selectedOption, setSelectedOption] = useState(null);
     const [isCorrect, setIsCorrect] = useState(null);
+    const gameStartedAtRef = useRef(null);
+    const recordedResultRef = useRef(false);
 
     // --- GAME LOGIC ---
 
     const startGame = (level) => {
+        gameStartedAtRef.current = Date.now();
+        recordedResultRef.current = false;
         setDifficulty(level);
         generateQuestions(level);
         setScore(0);
         setCurrentQuestionIndex(0);
         setGameState('playing');
     };
+
+    useEffect(() => {
+        if (gameState !== 'result' || recordedResultRef.current || !difficulty) return;
+        recordActivity({
+            activity: `Emotion Explorer — ${DIFFICULTY_CONFIG[difficulty].label}`,
+            skill: 'social',
+            score,
+            maxScore: QUESTIONS_PER_SESSION,
+            durationSeconds: gameStartedAtRef.current
+                ? Math.round((Date.now() - gameStartedAtRef.current) / 1000)
+                : 0,
+            details: { difficulty },
+        });
+        recordedResultRef.current = true;
+    }, [difficulty, gameState, score]);
 
     const generateQuestions = (level) => {
         const folderType = DIFFICULTY_CONFIG[level].folder;

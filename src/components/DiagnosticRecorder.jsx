@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
+import { recordActivity } from '../utils/activityHistory.js';
 
 // --- 1. LOGIC ENGINE (Unchanged) ---
 class SocialDiagnosticModule {
@@ -79,6 +80,7 @@ class SocialDiagnosticModule {
 const DiagnosticRecorder = ({ onBack }) => {
     const [gameState, setGameState] = useState('loading'); 
     const [report, setReport] = useState(null);
+    const recordedResultRef = useRef(false);
     const [debugInfo, setDebugInfo] = useState({ gaze: 0, zone: 'WAITING' });
 
     const videoRef = useRef(null);
@@ -133,6 +135,7 @@ const DiagnosticRecorder = ({ onBack }) => {
     }, []);
 
     const startGame = () => {
+        recordedResultRef.current = false;
         if (!landmarkerRef.current) return;
         socialAIRef.current = new SocialDiagnosticModule();
         particlesRef.current = []; 
@@ -145,6 +148,24 @@ const DiagnosticRecorder = ({ onBack }) => {
         
         loop(now);
     };
+
+    useEffect(() => {
+        if (gameState !== 'result' || !report || recordedResultRef.current) return;
+        recordActivity({
+            activity: 'Focus Diagnostic',
+            skill: 'attention',
+            score: Number(report.focusScore) || 0,
+            maxScore: 100,
+            durationSeconds: Math.round(
+                (Number(report.totalFocus) || 0) + (Number(report.totalDistraction) || 0)
+            ),
+            details: {
+                longestFocusStreak: Number(report.maxStreak) || 0,
+                distractedSeconds: Number(report.totalDistraction) || 0,
+            },
+        });
+        recordedResultRef.current = true;
+    }, [gameState, report]);
 
     const stopGame = () => {
         gameStateRef.current = 'result';

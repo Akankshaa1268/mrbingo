@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordActivity } from '../utils/activityHistory.js';
 
 const GRID_SIZE = 5;
 const TOTAL_TILES = GRID_SIZE * GRID_SIZE;
@@ -26,6 +27,8 @@ export const MemoryGridGame = ({ onBack }) => {
     const [feedback, setFeedback] = useState(null); // 'correct', 'incorrect'
     const [roundTimes, setRoundTimes] = useState([]);
     const startTimeRef = useRef(null);
+    const gameStartedAtRef = useRef(null);
+    const recordedResultRef = useRef(false);
 
     // sound effects could be added later
 
@@ -47,6 +50,10 @@ export const MemoryGridGame = ({ onBack }) => {
     }, [round]);
 
     const startRound = () => {
+        if (!gameStartedAtRef.current || gameState === 'start') {
+            gameStartedAtRef.current = Date.now();
+            recordedResultRef.current = false;
+        }
         const config = ROUND_CONFIG[round - 1];
         const newSequence = [];
         for (let i = 0; i < config.length; i++) {
@@ -57,6 +64,22 @@ export const MemoryGridGame = ({ onBack }) => {
         setGameState('demo'); // This triggers playSequence due to useEffect
         setFeedback(null);
     };
+
+    useEffect(() => {
+        if (gameState !== 'finished' || recordedResultRef.current) return;
+        const successfulRounds = roundTimes.filter((item) => item.result === 'success').length;
+        recordActivity({
+            activity: 'Memory Grid',
+            skill: 'memory',
+            score: successfulRounds,
+            maxScore: TOTAL_ROUNDS,
+            durationSeconds: gameStartedAtRef.current
+                ? Math.round((Date.now() - gameStartedAtRef.current) / 1000)
+                : 0,
+            details: { gameScore: score },
+        });
+        recordedResultRef.current = true;
+    }, [gameState, roundTimes, score]);
 
     const playSequence = async () => {
         // Wait a bit before starting
