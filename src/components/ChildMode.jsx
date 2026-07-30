@@ -89,34 +89,49 @@ const cards = [
 
 export function ChildMode() {
   const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', 'memory-grid', null
+  const [selectedDifficulty, setSelectedDifficulty] = React.useState("EASY");
   const earnedStars = getActivityHistory().reduce((total, item) => {
     const percentage = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
     return total + (percentage >= 85 ? 3 : percentage >= 60 ? 2 : 1);
   }, 0);
   const journeyLevel = Math.min(8, Math.max(1, Math.floor(earnedStars / 5) + 1));
 
+  const launchGame = (cardId, difficulty) => {
+    const routes = {
+      adventure: "letter-match",
+      racer: "cerebral-racer",
+      diagnostic: "diagnostic",
+      emotions: "emotion-game",
+      typing: "typing-adventure",
+      memory: "memory-grid",
+      stars: "stars",
+    };
+    setSelectedDifficulty(difficulty);
+    if (routes[cardId]) setActiveGame(routes[cardId]);
+  };
+
   if (activeGame === 'letter-match') {
-    return <LetterMatchingGame onBack={() => setActiveGame(null)} />;
+    return <LetterMatchingGame onBack={() => setActiveGame(null)} initialDifficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'cerebral-racer') {
-    return <CerebralCarGame onBack={() => setActiveGame(null)} />;
+    return <CerebralCarGame onBack={() => setActiveGame(null)} initialDifficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'diagnostic') {
-    return <DiagnosticRecorder onBack={() => setActiveGame(null)} />;
+    return <DiagnosticRecorder onBack={() => setActiveGame(null)} difficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'emotion-game') {
-    return <EmotionGame onBack={() => setActiveGame(null)} />;
+    return <EmotionGame onBack={() => setActiveGame(null)} initialDifficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'typing-adventure') {
-    return <TypingAdventureGame onBack={() => setActiveGame(null)} />;
+    return <TypingAdventureGame onBack={() => setActiveGame(null)} difficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'memory-grid') {
-    return <MemoryGridGame onBack={() => setActiveGame(null)} />;
+    return <MemoryGridGame onBack={() => setActiveGame(null)} difficulty={selectedDifficulty} />;
   }
 
   if (activeGame === 'stars') {
@@ -146,55 +161,42 @@ export function ChildMode() {
           </p>
 
           {/* Cards */}
-          <div
-            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-            aria-label="Main learning actions"
-          >
-            {cards.map((card, i) => (
-              <motion.button
+          <div className="relative mx-auto max-w-3xl space-y-6 py-5" aria-label="Learning adventure map">
+            <div className="absolute bottom-10 left-1/2 top-10 w-5 -translate-x-1/2 rounded-full bg-gradient-to-b from-bingo-yellow via-bingo-coral to-bingo-indigo opacity-30" />
+            {cards.filter((card) => card.id !== "challenge").map((card, i) => (
+              <motion.div
                 key={card.id}
-                type="button"
-                onClick={() => {
-                  if (card.id === "adventure") {
-                    setActiveGame('letter-match');
-                  } else if (card.id === "racer") {
-                    setActiveGame('cerebral-racer');
-                  } else if (card.id === "diagnostic") {
-                    setActiveGame('diagnostic');
-                  } else if (card.id === "emotions") {
-                    setActiveGame('emotion-game');
-                  } else if (card.id === "typing") {
-                    setActiveGame('typing-adventure');
-                  } else if (card.id === "memory") {
-                    setActiveGame('memory-grid');
-                  } else if (card.id === "stars") {
-                    setActiveGame('stars');
-                  }
-                }}
-                className="toon-card group relative flex min-h-44 flex-col items-start justify-between overflow-hidden px-5 py-5 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/60"
+                className={`relative z-10 flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
                 variants={cardVariants}
                 initial="initial"
                 animate="animate"
                 custom={i}
               >
-                <div className={`absolute -right-8 -top-9 h-28 w-28 rounded-full opacity-20 transition-transform duration-300 group-hover:scale-125 ${card.accent}`} />
-                <div className="relative z-10 flex w-full flex-col items-start gap-4">
-                  <div
-                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-bingo-navy/10 bg-gradient-to-br text-3xl shadow-pop-sm ${card.color}`}
-                    aria-hidden="true"
-                  >
-                    {card.icon}
+                <div className="toon-card group relative w-[48%] min-w-64 overflow-hidden p-4">
+                  <div className={`absolute -right-8 -top-9 h-28 w-28 rounded-full opacity-20 ${card.accent}`} />
+                  <div className="relative flex items-center gap-3">
+                    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-br text-3xl shadow-pop-sm ${card.color}`} aria-hidden="true">
+                      {card.icon}
+                    </div>
+                    <div>
+                      <p className="font-display text-lg font-bold leading-tight text-bingo-navy">{card.title}</p>
+                      <p className="mt-1 text-xs font-semibold text-bingo-navy/55">{card.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-display text-lg font-bold leading-tight text-bingo-navy">
-                      {card.title}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold leading-relaxed text-bingo-navy/60">
-                      {card.description}
-                    </p>
+                  <div className={`relative mt-4 grid gap-2 ${card.id === "stars" ? "grid-cols-1" : "grid-cols-3"}`}>
+                    {(card.id === "stars" ? ["OPEN"] : ["EASY", "MEDIUM", "HARD"]).map((level, levelIndex) => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => launchGame(card.id, level === "OPEN" ? "EASY" : level)}
+                        className={`rounded-xl border-2 border-bingo-navy/10 px-2 py-2 text-[0.65rem] font-extrabold transition hover:-translate-y-0.5 ${levelIndex === 0 ? "bg-bingo-mint/35" : levelIndex === 1 ? "bg-bingo-yellow/60" : "bg-bingo-coral/25"}`}
+                      >
+                        {level[0] + level.slice(1).toLowerCase()}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </motion.button>
+              </motion.div>
             ))}
           </div>
 

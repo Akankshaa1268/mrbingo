@@ -59,8 +59,8 @@ const LEVEL_2_WORDS = [
   { type: QUESTION_TYPES.WORD, prompt: 'milk', answer: 'milk', instruction: 'Type the word milk' },
 ];
 
-export const TypingAdventureGame = ({ onBack }) => {
-  const [level, setLevel] = useState(1);
+export const TypingAdventureGame = ({ onBack, difficulty = "EASY" }) => {
+  const [level, setLevel] = useState(difficulty === "HARD" ? 2 : 1);
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [inputValue, setInputValue] = useState('');
@@ -100,7 +100,7 @@ export const TypingAdventureGame = ({ onBack }) => {
   useEffect(() => {
     if (!isGameOver || recordedResultRef.current === level) return;
     recordActivity({
-      activity: `Typing Hero — Level ${level}`,
+      activity: `Typing Hero — ${difficulty[0] + difficulty.slice(1).toLowerCase()}`,
       skill: 'literacy',
       score,
       maxScore: 10,

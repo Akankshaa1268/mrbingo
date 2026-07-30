@@ -122,13 +122,7 @@ function AppContent() {
                   </div>
 
                   <div className="relative flex min-h-[430px] items-center justify-center lg:justify-end">
-                    <motion.div
-                      className="absolute inset-x-3 bottom-4 top-10 rounded-[3.5rem] border-[4px] border-bingo-navy/10 bg-bingo-blue shadow-pop sm:inset-x-8"
-                      initial={{ opacity: 0, rotate: 3, scale: 0.94 }}
-                      animate={{ opacity: 1, rotate: 2, scale: 1 }}
-                      transition={{ delay: 0.12, type: "spring" }}
-                    />
-                    <div className="absolute inset-x-12 bottom-9 top-20 rounded-[45%] bg-white/35" />
+                    <div className="absolute bottom-5 left-1/2 h-12 w-72 -translate-x-1/2 rounded-[50%] bg-bingo-navy/10 blur-lg" />
                     <div className="relative z-10 pt-7">
                       <MrBingoCharacter />
                     </div>

@@ -6,13 +6,15 @@ import faceLandmarkerModel from '../public/face_landmarker.task?url';
 // --- 1. LOGIC ENGINE (Unchanged) ---
 class SocialDiagnosticModule {
     constructor() {
-        this.CENTER_TOLERANCE = 0.18;
+        this.MOVEMENT_TOLERANCE = 0.065;
         this.total_focus_time = 0.0;
         this.total_distraction_time = 0.0;
         this.current_streak = 0.0;
         this.max_streak = 0.0;
-        this.LEFT_EYE = [33, 133, 468]; 
-        this.RIGHT_EYE = [362, 263, 473];
+        this.LEFT_EYE = [33, 133, 159, 145, 468];
+        this.RIGHT_EYE = [362, 263, 386, 374, 473];
+        this.calibrationSamples = [];
+        this.baseline = null;
     }
 
     _dist(p1, p2) {
@@ -20,24 +22,52 @@ class SocialDiagnosticModule {
     }
 
     _get_gaze_ratio(landmarks, indices) {
-        const p1 = landmarks[indices[0]]; 
-        const p2 = landmarks[indices[1]]; 
-        const iris = landmarks[indices[2]];
-        const eye_width = Math.abs(p2.x - p1.x);
-        if (eye_width === 0) return 0.5;
-        return (iris.x - Math.min(p1.x, p2.x)) / eye_width;
+        const left = landmarks[indices[0]];
+        const right = landmarks[indices[1]];
+        const top = landmarks[indices[2]];
+        const bottom = landmarks[indices[3]];
+        const iris = landmarks[indices[4]];
+        const width = Math.abs(right.x - left.x);
+        const height = Math.abs(bottom.y - top.y);
+        return {
+            x: width ? (iris.x - Math.min(left.x, right.x)) / width : 0.5,
+            y: height ? (iris.y - Math.min(top.y, bottom.y)) / height : 0.5,
+        };
     }
 
     process(landmarks, dt) {
         if (!landmarks) return null;
         const leftRatio = this._get_gaze_ratio(landmarks, this.LEFT_EYE);
         const rightRatio = this._get_gaze_ratio(landmarks, this.RIGHT_EYE);
-        const avgGaze = (leftRatio + rightRatio) / 2.0;
+        const gaze = {
+            x: (leftRatio.x + rightRatio.x) / 2,
+            y: (leftRatio.y + rightRatio.y) / 2,
+        };
+
+        if (!this.baseline) {
+            this.calibrationSamples.push(gaze);
+            if (this.calibrationSamples.length >= 24) {
+                this.baseline = {
+                    x: this.calibrationSamples.reduce((sum, sample) => sum + sample.x, 0) / this.calibrationSamples.length,
+                    y: this.calibrationSamples.reduce((sum, sample) => sum + sample.y, 0) / this.calibrationSamples.length,
+                };
+            }
+            return {
+                gazeScore: 0,
+                currentZone: "CALIBRATING",
+                isFocused: true,
+                isCalibrating: true,
+                currentStreak: 0,
+                landmarks,
+            };
+        }
+
+        const movement = Math.hypot(gaze.x - this.baseline.x, gaze.y - this.baseline.y);
 
         let zone = "UNKNOWN";
         let isFocused = false;
 
-        if (Math.abs(avgGaze - 0.5) <= this.CENTER_TOLERANCE) {
+        if (movement <= this.MOVEMENT_TOLERANCE) {
             zone = "CENTER_FOCUS";
             isFocused = true;
             this.total_focus_time += dt;
@@ -45,7 +75,7 @@ class SocialDiagnosticModule {
             if (this.current_streak > this.max_streak) this.max_streak = this.current_streak;
         } else {
             this.current_streak = 0;
-            if (avgGaze < 0.5) {
+            if (gaze.x < this.baseline.x) {
                 zone = "DISTRACTION_LEFT";
                 this.total_distraction_time += dt;
             } else {
@@ -55,7 +85,7 @@ class SocialDiagnosticModule {
         }
 
         return {
-            gazeScore: avgGaze,
+            gazeScore: movement,
             currentZone: zone,
             isFocused: isFocused,
             currentStreak: this.current_streak,
@@ -76,7 +106,9 @@ class SocialDiagnosticModule {
 }
 
 // --- 2. REACT COMPONENT ---
-const DiagnosticRecorder = ({ onBack }) => {
+const DiagnosticRecorder = ({ onBack, difficulty = "MEDIUM" }) => {
+    const sessionDuration = { EASY: 20, MEDIUM: 30, HARD: 40 }[difficulty] || 30;
+    const distractionRate = { EASY: 0.025, MEDIUM: 0.045, HARD: 0.07 }[difficulty] || 0.045;
     const [gameState, setGameState] = useState('loading'); 
     const [report, setReport] = useState(null);
     const [cameraError, setCameraError] = useState("");
@@ -177,7 +209,7 @@ const DiagnosticRecorder = ({ onBack }) => {
     useEffect(() => {
         if (gameState !== 'result' || !report || recordedResultRef.current) return;
         recordActivity({
-            activity: 'Focus Diagnostic',
+            activity: `Focus Diagnostic — ${difficulty[0] + difficulty.slice(1).toLowerCase()}`,
             skill: 'attention',
             score: Number(report.focusScore) || 0,
             maxScore: 100,
@@ -208,7 +240,7 @@ const DiagnosticRecorder = ({ onBack }) => {
         lastTimeRef.current = time;
 
         const elapsedTime = (time - startTimeRef.current) / 1000;
-        const timeLeft = Math.max(0, 30 - elapsedTime);
+        const timeLeft = Math.max(0, sessionDuration - elapsedTime);
 
         // 2. Stop if time is up
         if (timeLeft <= 0) {
@@ -253,7 +285,7 @@ const DiagnosticRecorder = ({ onBack }) => {
 
         // B. FALLING LUCID ICONS (Distractions)
         // Spawn Logic (Slightly faster spawn rate for distraction)
-        if (Math.random() < 0.045) {
+        if (Math.random() < distractionRate) {
             const distractions = ['🧸', '🍭', '🧁', '🚀', '🍎', '⚽'];
             particlesRef.current.push({
                 x: Math.random() * w,
@@ -289,6 +321,10 @@ const DiagnosticRecorder = ({ onBack }) => {
             dotColor = '#00FF00';
             ringColor = 'rgba(0, 255, 0, 0.3)';
         }
+        if (data?.isCalibrating) {
+            dotColor = '#FFD43B';
+            ringColor = 'rgba(255, 212, 59, 0.35)';
+        }
 
         // Draw Target
         ctx.beginPath();
@@ -319,7 +355,7 @@ const DiagnosticRecorder = ({ onBack }) => {
         ctx.fillStyle = "rgba(255,255,255,0.5)";
         ctx.font = "16px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("STARE AT THE DOT", w/2, h - 30);
+        ctx.fillText(data?.isCalibrating ? "KEEP LOOKING AT THE DOT — CALIBRATING" : "STARE AT THE DOT", w/2, h - 30);
         
         ctx.restore();
     };
@@ -365,7 +401,7 @@ const DiagnosticRecorder = ({ onBack }) => {
                                 Green means focused; red means your gaze moved.
                             </p>
                             <button onClick={startGame} className="toon-button-primary px-8">
-                                Start 30s Test
+                                Start {sessionDuration}s Test
                             </button>
                         </div>
                     )}

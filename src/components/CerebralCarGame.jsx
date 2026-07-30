@@ -16,7 +16,7 @@ const DIFFICULTY_CONFIG = {
     LEVEL_9: { level: 9, lanes: 4, obstaclesPerWave: 3, label: 'Star Cup', color: 'from-yellow-400 to-red-500', speed: 0.5, spawnRate: 2600, carScale: 0.3 }
 };
 
-export const CerebralCarGame = ({ onBack }) => {
+export const CerebralCarGame = ({ onBack, initialDifficulty }) => {
     // Game State
     const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD'
     const [isPlaying, setIsPlaying] = useState(false);
@@ -105,6 +105,12 @@ export const CerebralCarGame = ({ onBack }) => {
         setDodgeInstruction(null);
         recordedResultRef.current = false;
     };
+
+    useEffect(() => {
+        if (!initialDifficulty || difficulty) return;
+        const startingLevels = { EASY: 'LEVEL_1', MEDIUM: 'LEVEL_5', HARD: 'LEVEL_9' };
+        startGame(startingLevels[initialDifficulty] || 'LEVEL_1');
+    }, [initialDifficulty]);
 
     const endGame = () => {
         setIsGameOver(true);
