@@ -1,41 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
+import { recordActivity } from '../utils/activityHistory.js';
 
-// --- DATA STRUCTURE FOR EMOTIONS ---
-// NOTE: Since these are static assets, we hardcode the known files from your project structure.
-// This avoids needing a backend to list directory contents at runtime.
-const EMOTIONS_DB = {
-    Angry: {
-        Emoji: ["angry1.png", "OIP.jpg", "OIP 2.jpg"],
-        Cartoon: ["pikachu.jpg", "OIP.jpg", "OIP (1).jpg"],
-        Face: ["angry_face.jpg", "angry_face(1).jpeg", "OIP.jpg"]
-    },
-    Disgust: {
-        Emoji: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Cartoon: ["disgust1.png", "OIP.jpg", "OIP (1).jpg"],
-        Face: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"]
-    },
-    Fear: {
-        Emoji: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Cartoon: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Face: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"]
-    },
-    Happy: {
-        Emoji: ["happy.png", "OIP.jpg", "OIP (1).jpg"],
-        Cartoon: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Face: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"]
-    },
-    Sad: {
-        Emoji: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Cartoon: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Face: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"]
-    },
-    Shock: {
-        Emoji: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Cartoon: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"],
-        Face: ["OIP.jpg", "OIP (1).jpg", "OIP (2).jpg"]
+const emotionAssets = import.meta.glob(
+    '../public/**/*.{jpg,jpeg,png}',
+    { eager: true, query: '?url', import: 'default' }
+);
+
+const EMOTIONS_DB = Object.entries(emotionAssets).reduce((database, [path, assetUrl]) => {
+    const match = path.match(/\/public\/([^/]+)\/(Emoji|Cartoon|Face)\//);
+    if (!match) return database;
+    const [, emotion, folder] = match;
+    if (!database[emotion]) {
+        database[emotion] = { Emoji: [], Cartoon: [], Face: [] };
     }
-};
+    database[emotion][folder].push(assetUrl);
+    return database;
+}, {});
 
 const DIFFICULTY_CONFIG = {
     EASY: { label: 'Easy', folder: 'Emoji', color: 'from-green-400 to-emerald-500' },
@@ -54,16 +36,35 @@ export const EmotionGame = ({ onBack }) => {
     const [gameState, setGameState] = useState('menu'); // menu, playing, feedback, result
     const [selectedOption, setSelectedOption] = useState(null);
     const [isCorrect, setIsCorrect] = useState(null);
+    const gameStartedAtRef = useRef(null);
+    const recordedResultRef = useRef(false);
 
     // --- GAME LOGIC ---
 
     const startGame = (level) => {
+        gameStartedAtRef.current = Date.now();
+        recordedResultRef.current = false;
         setDifficulty(level);
         generateQuestions(level);
         setScore(0);
         setCurrentQuestionIndex(0);
         setGameState('playing');
     };
+
+    useEffect(() => {
+        if (gameState !== 'result' || recordedResultRef.current || !difficulty) return;
+        recordActivity({
+            activity: `Emotion Explorer — ${DIFFICULTY_CONFIG[difficulty].label}`,
+            skill: 'social',
+            score,
+            maxScore: QUESTIONS_PER_SESSION,
+            durationSeconds: gameStartedAtRef.current
+                ? Math.round((Date.now() - gameStartedAtRef.current) / 1000)
+                : 0,
+            details: { difficulty },
+        });
+        recordedResultRef.current = true;
+    }, [difficulty, gameState, score]);
 
     const generateQuestions = (level) => {
         const folderType = DIFFICULTY_CONFIG[level].folder;
@@ -74,12 +75,11 @@ export const EmotionGame = ({ onBack }) => {
             // 1. Pick Random Emotion (Correct Answer)
             const correctEmotion = allEmotions[Math.floor(Math.random() * allEmotions.length)];
 
-            // 2. Pick Random Image from that Emotion's Subfolder
+            // 2. Pick a bundled image from that emotion and difficulty.
             const possibleImages = EMOTIONS_DB[correctEmotion][folderType];
-            // Fallback for missing images (though we try to list them all)
-            const imageFile = possibleImages && possibleImages.length > 0
+            const imagePath = possibleImages && possibleImages.length > 0
                 ? possibleImages[Math.floor(Math.random() * possibleImages.length)]
-                : "placeholder.jpg";
+                : null;
 
             // 3. Generate 3 Distractors
             const distractors = allEmotions
@@ -90,24 +90,7 @@ export const EmotionGame = ({ onBack }) => {
             const options = [correctEmotion, ...distractors].sort(() => 0.5 - Math.random());
 
             newQuestions.push({
-                imagePath: `/src/public/${correctEmotion}/${folderType}/${imageFile}`, // Adjusted path for Vite to serve from src/public if configured, or move to public root. 
-                // NOTE: Standard Vite puts public assets at root. If your folder is src/public, import might be needed or move folder.
-                // Assuming "public" folder is served at root URL "/".
-                // If the folder structure is literally "src/public", we might need to import them or move them.
-                // User said "emotioins folder in public".
-                // My list_dir showed "src/public". 
-                // In Vite, usually things in "public" are served at root. But here it is "src/public". 
-                // I will try to use the raw path or assume build handles it.
-                // Best Practice: Move to public/ at root. But user has them in src/public.
-                // I will use exact relative path if possible or dynamic import if needed.
-                // Let's try direct URL assuming a specific vite config or just try relative.
-                // Actually, if it's in src, we should import it. But dynamic import of deep varying paths is tricky.
-                // Let's assume the user can move them or has a way. I will use the path structure:
-                // `src/public/${emotion}/${folder}/${file}` logic visualization. 
-                // WAIT. If it's in `src` it is NOT public static asset by default unless configured.
-                // I will try to use the path relative to project root?
-                // Let's try: `src/public/...`
-
+                imagePath,
                 correctAnswer: correctEmotion,
                 options: options
             });
@@ -138,19 +121,6 @@ export const EmotionGame = ({ onBack }) => {
                 setGameState('result');
             }
         }, 1500);
-    };
-
-    // --- RENDER HELPERS ---
-
-    // Attempt to resolve image path. Logic:
-    // If we are in dev, src/public might work if handled given we are in src/components.
-    // ../public/...
-    const getImgPath = (relPath) => {
-        // This is a naive attempt. In a real app we'd import.
-        // Or we might need to rely on the fact that Vite allows serving files?
-        // Let's try strictly relative URL from current location? No.
-        // Let's try absolute path from server root assuming src is exposed?
-        return relPath;
     };
 
     // --- RENDER ---
@@ -222,16 +192,17 @@ export const EmotionGame = ({ onBack }) => {
                 className="toon-panel mb-8 rotate-1 p-4 transition-transform duration-300 hover:rotate-0"
             >
                 <div className="w-64 h-64 md:w-80 md:h-80 bg-slate-200 rounded-2xl overflow-hidden relative">
-                    {/* We use a simple img tag. If path issues occur, we might see broken images. */}
-                    <img
-                        src={currentQ.imagePath}
-                        alt="Emotion?"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/300?text=Image+Not+Found";
-                            e.target.onerror = null; // Prevent loop
-                        }}
-                    />
+                    {currentQ.imagePath ? (
+                        <img
+                            src={currentQ.imagePath}
+                            alt="Choose the emotion shown"
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center p-6 text-center font-bold text-slate-500">
+                            This image is unavailable.
+                        </div>
+                    )}
                 </div>
             </motion.div>
 

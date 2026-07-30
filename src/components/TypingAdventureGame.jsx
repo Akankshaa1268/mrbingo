@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordActivity } from '../utils/activityHistory.js';
 
 const QUESTION_TYPES = {
   MIRROR: 'mirror',
@@ -67,6 +68,8 @@ export const TypingAdventureGame = ({ onBack }) => {
   const [isGameOver, setIsGameOver] = useState(false);
   const [feedback, setFeedback] = useState(null); // 'correct' | 'incorrect' | null
   const inputRef = useRef(null);
+  const levelStartedAtRef = useRef(Date.now());
+  const recordedResultRef = useRef(null);
 
   useEffect(() => {
     loadLevel(level);
@@ -89,8 +92,23 @@ export const TypingAdventureGame = ({ onBack }) => {
     setScore(0);
     setIsGameOver(false);
     setInputValue('');
+    levelStartedAtRef.current = Date.now();
+    recordedResultRef.current = null;
     setTimeout(() => inputRef.current?.focus(), 100);
   };
+
+  useEffect(() => {
+    if (!isGameOver || recordedResultRef.current === level) return;
+    recordActivity({
+      activity: `Typing Hero — Level ${level}`,
+      skill: 'literacy',
+      score,
+      maxScore: 10,
+      durationSeconds: Math.round((Date.now() - levelStartedAtRef.current) / 1000),
+      details: { level },
+    });
+    recordedResultRef.current = level;
+  }, [isGameOver, level, score]);
 
   const handleNextLevel = () => {
     setLevel(2);

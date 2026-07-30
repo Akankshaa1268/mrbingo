@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import {
+  buildAssistantResponse,
+  formatActivityDate,
+  formatDuration,
+  getActivityHistory,
+  HISTORY_UPDATED_EVENT,
+  summarizeHistory,
+} from "../utils/activityHistory.js";
 
 // --- Mock Data for Dashboard ---
 
@@ -162,9 +170,13 @@ function SummaryCard({ title, value, sub, color, iconType, isSoftWarning }) {
   );
 }
 
-function LearningChart() {
+function LearningChart({ history }) {
   // Simple SVG Line Chart
-  const points = [20, 45, 35, 60, 55, 80, 75, 90];
+  const values = [...history]
+    .reverse()
+    .slice(-8)
+    .map((item) => item.maxScore > 0 ? Math.round((item.score / item.maxScore) * 100) : 0);
+  const points = values.length > 1 ? values : [values[0] || 0, values[0] || 0];
   const width = 100; // viewbox units
   const height = 50;
 
@@ -211,20 +223,23 @@ function LearningChart() {
 
       {/* Axis Labels */}
       <div className="absolute bottom-2 left-4 right-4 flex justify-between text-[10px] text-slate-400">
-        <span>Week 1</span>
-        <span>Week 2</span>
-        <span>Week 3</span>
-        <span>Week 4</span>
+        <span>Older</span>
+        <span>Recent sessions</span>
+        <span>Latest</span>
       </div>
     </div>
   );
 }
 
-function SkillBarChart() {
+function SkillBarChart({ skills }) {
+  if (!skills.length) {
+    return <p className="py-8 text-sm font-semibold text-slate-500">Complete an activity to create a skill breakdown.</p>;
+  }
+  const colors = ["bg-bingo-coral", "bg-bingo-yellow", "bg-bingo-mint", "bg-bingo-lavender", "bg-bingo-blue"];
   return (
     <div className="space-y-4 pt-4">
-      {SKILL_BREAKDOWN.map((skill, idx) => (
-        <div key={idx} className="group">
+      {skills.map((skill, idx) => (
+        <div key={skill.key} className="group">
           <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
             <span>{skill.label}</span>
             <span>{skill.value}%</span>
@@ -234,7 +249,7 @@ function SkillBarChart() {
               initial={{ width: 0 }}
               animate={{ width: `${skill.value}%` }}
               transition={{ duration: 1, delay: idx * 0.1 }}
-              className={`h-full rounded-full ${skill.color} opacity-80 group-hover:opacity-100 transition-opacity`}
+              className={`h-full rounded-full ${colors[idx % colors.length]} opacity-80 group-hover:opacity-100 transition-opacity`}
             />
           </div>
         </div>
@@ -243,44 +258,44 @@ function SkillBarChart() {
   );
 }
 
-function ChildSnapshotCard() {
+function ChildSnapshotCard({ summary }) {
   return (
     <div className="toon-panel flex h-full flex-col items-center p-6 text-center">
       <div className="mb-4 relative">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-bingo-yellow via-bingo-coral to-bingo-lavender p-1">
           <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-bold text-slate-800">
-            {CHILD_PROFILE.name[0]}
+            B!
           </div>
         </div>
         <div className="absolute bottom-0 right-0 bg-emerald-400 w-5 h-5 rounded-full border-2 border-white"></div>
       </div>
 
-      <h3 className="text-xl font-bold text-slate-900">{CHILD_PROFILE.name}</h3>
-      <p className="text-sm text-slate-500 mb-4">{CHILD_PROFILE.age} Years • {CHILD_PROFILE.grade}</p>
+      <h3 className="text-xl font-bold text-slate-900">Learning Snapshot</h3>
+      <p className="text-sm text-slate-500 mb-4">Calculated from completed activities</p>
 
       <div className="w-full space-y-3 text-left bg-slate-50 rounded-2xl p-4">
         <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-500 font-medium">Learning Style</span>
-          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">Visual</span>
+          <span className="text-slate-500 font-medium">Sessions</span>
+          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">{summary.sessionCount}</span>
         </div>
         <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-500 font-medium">Strength</span>
-          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">{CHILD_PROFILE.strength}</span>
+          <span className="text-slate-500 font-medium">Measured strength</span>
+          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">{summary.strongestSkill?.label || "Not enough data"}</span>
         </div>
         <div className="flex justify-between items-center text-xs">
-          <span className="text-slate-500 font-medium">Daily Goal</span>
-          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">{CHILD_PROFILE.goal}</span>
+          <span className="text-slate-500 font-medium">Practice area</span>
+          <span className="text-slate-800 font-semibold bg-white px-2 py-0.5 rounded shadow-sm">{summary.focusSkill?.label || "Complete a game"}</span>
         </div>
       </div>
 
       <div className="mt-auto pt-4 w-full">
         <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-          <span>Mood Trend</span>
-          <span className="text-emerald-600 font-semibold">Calm</span>
+          <span>Average result</span>
+          <span className="text-emerald-600 font-semibold">{summary.sessionCount ? `${summary.average}%` : "No data"}</span>
         </div>
         <div className="flex gap-1 h-2">
-          {[1, 2, 3, 4, 5, 6, 7].map(i => (
-            <div key={i} className={`flex-1 rounded-full ${i > 5 ? 'bg-bingo-mint' : 'bg-slate-200'}`}></div>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className={`flex-1 rounded-full ${summary.average >= i * 20 ? 'bg-bingo-mint' : 'bg-slate-200'}`}></div>
           ))}
         </div>
       </div>
@@ -288,7 +303,7 @@ function ChildSnapshotCard() {
   );
 }
 
-function RecentActivityTable() {
+function RecentActivityTable({ history }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm text-left text-slate-600">
@@ -302,12 +317,12 @@ function RecentActivityTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {RECENT_ACTIVITY.map((item) => (
+          {history.slice(0, 10).map((item) => (
             <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-              <td className="px-4 py-3 font-medium text-slate-900">{item.date}</td>
+              <td className="px-4 py-3 font-medium text-slate-900">{formatActivityDate(item.completedAt)}</td>
               <td className="px-4 py-3">{item.activity}</td>
-              <td className="px-4 py-3 font-semibold text-slate-700">{item.score}</td>
-              <td className="px-4 py-3 text-slate-500">{item.time}</td>
+              <td className="px-4 py-3 font-semibold text-slate-700">{item.score}/{item.maxScore}</td>
+              <td className="px-4 py-3 text-slate-500">{formatDuration(item.durationSeconds)}</td>
               <td className="px-4 py-3">
                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                   }`}>
@@ -317,6 +332,13 @@ function RecentActivityTable() {
               </td>
             </tr>
           ))}
+          {!history.length && (
+            <tr>
+              <td colSpan="5" className="px-4 py-10 text-center font-semibold text-slate-500">
+                No completed activities yet. Results will appear here after a game is finished.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -420,7 +442,7 @@ function ActivityPlans() {
 
 function Chatbot() {
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! How can I support you and your child today?", sender: 'bot' }
+    { id: 1, text: "Hello! I can explain the recorded learning history and suggest what to practice next.", sender: 'bot' }
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -434,14 +456,6 @@ function Chatbot() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const getBotResponse = (text) => {
-    const lower = text.toLowerCase();
-    if (lower.includes('skill') || lower.includes('reading')) return "For reading skills, I recommend the 'Letter Matching' adventure. It builds phonemic awareness gently.";
-    if (lower.includes('calm') || lower.includes('meltdown')) return "Sensory regulation is key. Try the 'Breathing Bubble' activity or a heavy work break.";
-    if (lower.includes('iep') || lower.includes('school')) return "For IEPs, focusing on 'measurable goals' is important. I can help draft specific requests for accommodations.";
-    return "I'm here to listen and support. Could you tell me more about that?";
-  };
-
   const handleSend = () => {
     if (!input.trim()) return;
 
@@ -451,7 +465,7 @@ function Chatbot() {
     setIsTyping(true);
 
     setTimeout(() => {
-      const botText = getBotResponse(userText);
+      const botText = buildAssistantResponse(userText, getActivityHistory());
       setMessages(prev => [...prev, { id: Date.now() + 1, text: botText, sender: 'bot' }]);
       setIsTyping(false);
     }, 1500);
@@ -461,7 +475,7 @@ function Chatbot() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 h-[500px] flex flex-col bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="bg-slate-900 p-4 text-white">
         <h3 className="font-bold">Mr. Bingo Assistant</h3>
-        <p className="text-xs text-slate-300">Ask me about parenting, IEPs, or game tips!</p>
+        <p className="text-xs text-slate-300">Answers are based on completed activities stored on this device.</p>
       </div>
       <div className="flex-1 p-4 bg-slate-50 overflow-y-auto space-y-4 soft-scrollbar">
         {messages.map((msg) => (
@@ -496,7 +510,7 @@ function Chatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Type your question..."
+            placeholder="Ask about progress or what to practice..."
             className="flex-1 border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none"
           />
           <button
@@ -586,6 +600,50 @@ function TherapistBooking() {
 // --- Main/Analytics View (The Redesign) ---
 
 function AnalyticsView() {
+  const [history, setHistory] = useState(() => getActivityHistory());
+  const summary = summarizeHistory(history);
+  const summaryStats = [
+    {
+      title: "Average Result",
+      value: summary.sessionCount ? `${summary.average}%` : "—",
+      sub: summary.sessionCount ? `Across ${summary.sessionCount} completed sessions` : "Complete a game to begin",
+      color: "from-bingo-blue/40 to-bingo-blue/10",
+      iconType: "progress",
+    },
+    {
+      title: "Completed Sessions",
+      value: String(summary.sessionCount),
+      sub: "Stored on this device",
+      color: "from-bingo-mint/40 to-bingo-mint/10",
+      iconType: "trend",
+    },
+    {
+      title: "Practice Area",
+      value: summary.focusSkill?.label || "No data",
+      sub: summary.focusSkill ? `${summary.focusSkill.value}% measured average` : "No result inferred yet",
+      color: "from-bingo-yellow/60 to-bingo-yellow/20",
+      iconType: "focus",
+      isSoftWarning: Boolean(summary.focusSkill),
+    },
+    {
+      title: "Time Recorded",
+      value: formatDuration(summary.totalSeconds),
+      sub: "Completed play time",
+      color: "from-bingo-lavender/40 to-bingo-lavender/10",
+      iconType: "time",
+    },
+  ];
+
+  useEffect(() => {
+    const refresh = () => setHistory(getActivityHistory());
+    window.addEventListener(HISTORY_UPDATED_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(HISTORY_UPDATED_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -594,7 +652,7 @@ function AnalyticsView() {
     >
       {/* Top Section – Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {SUMMARY_STATS.map((stat, idx) => (
+        {summaryStats.map((stat, idx) => (
           <SummaryCard key={idx} {...stat} />
         ))}
       </div>
@@ -609,26 +667,26 @@ function AnalyticsView() {
               <h3 className="text-lg font-bold text-slate-900">Learning Progress</h3>
               <span className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Last 30 Days</span>
             </div>
-            <LearningChart />
+            <LearningChart history={history} />
           </div>
 
           {/* Bar Chart */}
           <div className="toon-panel p-6">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Skill Breakdown</h3>
-            <SkillBarChart />
+            <SkillBarChart skills={summary.skills} />
           </div>
         </div>
 
         {/* Right Column (Child Snapshot) */}
         <div className="lg:col-span-1">
-          <ChildSnapshotCard />
+          <ChildSnapshotCard summary={summary} />
         </div>
       </div>
 
       {/* Bottom Section - Recent Activity Table */}
       <div className="toon-panel p-6">
         <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Activity</h3>
-        <RecentActivityTable />
+        <RecentActivityTable history={history} />
       </div>
     </motion.div>
   );

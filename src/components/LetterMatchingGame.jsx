@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordActivity } from '../utils/activityHistory.js';
 
 // Expanded Dyslexia Screening Pairs
 // Using distinct "confusion groups"
@@ -37,6 +38,7 @@ export const LetterMatchingGame = ({ onBack }) => {
     const [timeElapsed, setTimeElapsed] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const timerRef = useRef(null);
+    const recordedResultRef = useRef(false);
 
     // Timer Effect
     useEffect(() => {
@@ -59,6 +61,7 @@ export const LetterMatchingGame = ({ onBack }) => {
         setTimeElapsed(0);
         setWrongAttempts(0);
         setIsProcessing(false);
+        recordedResultRef.current = false;
 
         // Generate Cards
         let gameCards = [];
@@ -184,6 +187,20 @@ export const LetterMatchingGame = ({ onBack }) => {
         setIsTimerRunning(false);
         setIsGameComplete(true);
     };
+
+    useEffect(() => {
+        if (!isGameComplete || recordedResultRef.current || !difficulty) return;
+        const pairCount = DIFFICULTY_LEVELS[difficulty].pairs;
+        recordActivity({
+            activity: `Dyslexia Screening — ${DIFFICULTY_LEVELS[difficulty].label}`,
+            skill: 'literacy',
+            score: pairCount,
+            maxScore: pairCount + wrongAttempts,
+            durationSeconds: timeElapsed,
+            details: { difficulty, wrongAttempts },
+        });
+        recordedResultRef.current = true;
+    }, [difficulty, isGameComplete, timeElapsed, wrongAttempts]);
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
