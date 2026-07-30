@@ -7,6 +7,8 @@ import DiagnosticRecorder from "./DiagnosticRecorder.jsx";
 import { EmotionGame } from "./EmotionGame.jsx";
 import { TypingAdventureGame } from "./TypingAdventureGame.jsx";
 import { MemoryGridGame } from "./MemoryGridGame.jsx";
+import { StarsJourney } from "./StarsJourney.jsx";
+import { getActivityHistory } from "../utils/activityHistory.js";
 
 const cardVariants = {
   initial: { y: 12, opacity: 0 },
@@ -87,6 +89,11 @@ const cards = [
 
 export function ChildMode() {
   const [activeGame, setActiveGame] = React.useState(null); // 'letter-match', 'cerebral-racer', 'typing-adventure', 'memory-grid', null
+  const earnedStars = getActivityHistory().reduce((total, item) => {
+    const percentage = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
+    return total + (percentage >= 85 ? 3 : percentage >= 60 ? 2 : 1);
+  }, 0);
+  const journeyLevel = Math.min(8, Math.max(1, Math.floor(earnedStars / 5) + 1));
 
   if (activeGame === 'letter-match') {
     return <LetterMatchingGame onBack={() => setActiveGame(null)} />;
@@ -110,6 +117,10 @@ export function ChildMode() {
 
   if (activeGame === 'memory-grid') {
     return <MemoryGridGame onBack={() => setActiveGame(null)} />;
+  }
+
+  if (activeGame === 'stars') {
+    return <StarsJourney onBack={() => setActiveGame(null)} />;
   }
 
   return (
@@ -156,6 +167,8 @@ export function ChildMode() {
                     setActiveGame('typing-adventure');
                   } else if (card.id === "memory") {
                     setActiveGame('memory-grid');
+                  } else if (card.id === "stars") {
+                    setActiveGame('stars');
                   }
                 }}
                 className="toon-card group relative flex min-h-44 flex-col items-start justify-between overflow-hidden px-5 py-5 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/60"
@@ -200,7 +213,7 @@ export function ChildMode() {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
-                        className={`inline-block h-4 w-4 rounded-[35%] border border-bingo-navy/10 ${star <= 3 ? "rotate-12 bg-bingo-coral" : "bg-white/70"
+                        className={`inline-block h-4 w-4 rounded-[35%] border border-bingo-navy/10 ${star <= Math.min(5, earnedStars % 5 || (earnedStars ? 5 : 0)) ? "rotate-12 bg-bingo-coral" : "bg-white/70"
                           } shadow-sm`}
                       />
                     ))}
@@ -209,10 +222,10 @@ export function ChildMode() {
               </div>
               <div className="text-right">
                 <p className="text-[0.68rem] font-extrabold uppercase tracking-widest text-bingo-navy/70">
-                  Level 2
+                  Level {journeyLevel}
                 </p>
                 <div className="mt-1 h-3 w-24 overflow-hidden rounded-full border border-bingo-navy/10 bg-white/60">
-                  <div className="h-full w-2/3 rounded-full bg-bingo-mint" />
+                  <div className="h-full rounded-full bg-bingo-mint" style={{ width: `${(earnedStars % 5) * 20}%` }} />
                 </div>
               </div>
             </div>
