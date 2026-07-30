@@ -23,74 +23,53 @@ function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold shadow-soft border border-white/60 transition-all duration-500 ${isSummer
-        ? "bg-gradient-to-r from-bingo-yellow to-bingo-coral text-slate-900"
-        : "bg-gradient-to-r from-bingo-lavender to-bingo-blue text-slate-800"
-        }`}
+      className={`relative h-11 w-[4.5rem] rounded-full border-[3px] border-bingo-navy/15 p-1 shadow-pop-sm transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/45 ${isSummer ? "bg-bingo-blue" : "bg-bingo-lavender"}`}
+      aria-label={`Switch to ${isSummer ? "candy" : "sunny"} theme`}
+      aria-pressed={isSummer}
     >
       <motion.span
-        key={isSummer ? "sun" : "moon"}
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.5, opacity: 0 }}
-        className="text-lg"
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-sm"
+        animate={{ x: isSummer ? 27 : 0 }}
+        transition={{ type: "spring", stiffness: 420, damping: 28 }}
       >
-        {isSummer ? "☀️" : "🧁"}
+        <span className={`h-3 w-3 rounded-full ${isSummer ? "bg-bingo-yellow" : "bg-bingo-indigo"}`} />
       </motion.span>
-      <span>{isSummer ? "Summer Vibes" : "Cute Vibes"}</span>
     </button>
   );
 }
 
 function AppContent() {
   const [mode, setMode] = useState(MODES.LANDING);
-  const { isSummer } = useTheme();
 
   return (
-    <div className={`relative min-h-screen transition-colors duration-700 ${isSummer ? "bg-amber-50" : "bg-sky-50"
-      }`}>
+    <div className="relative min-h-screen overflow-hidden">
       <FloatingBackground />
 
-      {/* App shell */}
-      <div className="relative z-10 flex flex-col min-h-screen">
-        {/* Top nav */}
+      <div className="relative z-10 flex min-h-screen flex-col">
         <header className="w-full">
-          <div className="max-w-6xl mx-auto flex items-center justify-between px-4 pt-4 sm:pt-6">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 pt-4 sm:pt-6">
             <button
               type="button"
               onClick={() => setMode(MODES.LANDING)}
-              className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 sm:px-4 sm:py-2 shadow-sm border border-slate-100 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/70 transition-transform hover:scale-105 active:scale-95"
+              className="group flex items-center gap-3 rounded-full border-[3px] border-bingo-navy/10 bg-white px-3 py-2 shadow-pop-sm transition hover:-rotate-1 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/50"
             >
-              <span
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-2xl text-xl ${isSummer ? "bg-amber-100" : "bg-blue-100"}`}
-                aria-hidden="true"
-              >
-                🧠
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-bingo-yellow font-display text-xl font-bold text-bingo-navy shadow-inner" aria-hidden="true">
+                B!
               </span>
               <div className="text-left">
-                <p className="text-xs sm:text-sm leading-none font-extrabold text-slate-900 tracking-tight">
-                  Mr. Bingo
-                </p>
-                <p className="text-[0.6rem] sm:text-[0.65rem] text-slate-500">
-                  Gentle AI learning
-                </p>
+                <p className="font-display text-base font-bold leading-none text-bingo-navy">Mr. Bingo</p>
               </div>
             </button>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 text-[0.7rem] text-slate-600">
-                <span className="rounded-full bg-white px-3 py-1 border border-slate-100">
-                  Inclusive by design
-                </span>
-              </div>
+            <div className="flex items-center gap-2 sm:gap-3">
               <ThemeToggle />
             </div>
           </div>
         </header>
 
-        {/* Main content */}
-        <main className="flex-1 flex flex-col justify-center">
+        <main className="flex flex-1 flex-col justify-center">
           <AnimatePresence mode="wait">
             {mode === MODES.LANDING && (
               <motion.section
@@ -102,151 +81,92 @@ function AppContent() {
                 transition={{ duration: 0.4 }}
                 aria-label="Welcome to Mr. Bingo"
               >
-                <div className="max-w-6xl mx-auto px-4 py-10 lg:py-16 grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center">
-                  {/* Text column */}
-                  <div>
-                    <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[0.7rem] font-semibold text-bingo-navy shadow-sm mb-3 border border-slate-100">
-                      <span aria-hidden="true">💫</span>
-                      Designed with neurodivergent kids &amp; clinicians
+                <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,.95fr)] lg:gap-12 lg:py-16">
+                  <div className="relative z-20">
+                    <p className="toon-kicker mb-5">
+                      A playful place for every kind of brain
                     </p>
-                    <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-extrabold text-slate-900 leading-tight mb-3">
-                      A gentle, playful{" "}
-                      <span className={`inline-block text-transparent bg-clip-text bg-gradient-to-r ${isSummer ? "from-amber-400 to-orange-400" : "from-blue-400 to-purple-400"}`}>
-                        buddy
-                      </span>{" "}
-                      for curious brains.
+                    <h1 className="max-w-3xl text-[3.15rem] font-bold leading-[0.93] tracking-[-0.045em] text-bingo-navy sm:text-6xl lg:text-[5.25rem]">
+                      Learn big.
+                      <span className="relative block w-fit text-bingo-coral">
+                        Play bigger!
+                        <svg className="absolute -bottom-3 left-0 w-full text-bingo-yellow" viewBox="0 0 320 16" preserveAspectRatio="none" aria-hidden="true">
+                          <path d="M5 10C85 1 232 3 315 8" fill="none" stroke="currentColor" strokeWidth="10" strokeLinecap="round" />
+                        </svg>
+                      </span>
                     </h1>
-                    <p className="text-sm sm:text-base text-slate-700 max-w-xl mb-5 leading-relaxed">
-                      Mr. Bingo turns everyday learning into small, predictable
-                      adventures supporting autistic, ADHD, and otherwise
-                      neurodivergent children with calm visuals, clear choices,
-                      and gamified stars.
+                    <p className="mt-8 max-w-xl text-base font-semibold leading-relaxed text-bingo-navy/75 sm:text-lg">
+                      Join Mr. Bingo for colorful, confidence-building adventures made for curious kids—including autistic, ADHD, and neurodivergent learners.
                     </p>
 
-                    {/* Mode buttons */}
-                    <div
-                      className="flex flex-col sm:flex-row gap-3 sm:items-center"
-                      aria-label="Choose your experience"
-                    >
+                    <div className="mt-7 flex flex-col gap-3 sm:flex-row" aria-label="Choose your experience">
                       <motion.button
                         type="button"
                         onClick={() => setMode(MODES.CHILD)}
-                        className={`inline-flex items-center justify-center gap-2 rounded-full text-slate-900 font-bold px-6 py-4 text-sm sm:text-base shadow-sm border border-white/60 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-yellow/60 ${isSummer ? "bg-amber-200 hover:bg-amber-300" : "bg-blue-200 hover:bg-blue-300"} transition-colors`}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        className="toon-button-primary px-7 py-4 text-base"
+                        whileHover={{ rotate: -1.5, scale: 1.025 }}
+                        whileTap={{ scale: 0.96, y: 5 }}
                       >
-                        <span aria-hidden="true" className="text-xl">
-
-                        </span>
-                        I am a Child
+                        Start my adventure
                       </motion.button>
-
                       <motion.button
                         type="button"
                         onClick={() => setMode(MODES.PARENT)}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-slate-900 font-bold px-6 py-4 text-sm sm:text-base shadow-sm border border-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/60 hover:bg-slate-50 transition-colors"
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        className="toon-button-secondary px-7 py-4 text-base"
+                        whileHover={{ rotate: 1, scale: 1.02 }}
+                        whileTap={{ scale: 0.96, y: 5 }}
                       >
-                        <span aria-hidden="true" className="text-xl">
-
-                        </span>
-                        I am a Parent / Therapist
+                        Grown-up space
                       </motion.button>
-                    </div>
-
-                    <div className="mt-6 flex flex-wrap items-center gap-3 text-[0.7rem] text-slate-500">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-1 border border-slate-100">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                        No flashing lights
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-1 border border-slate-100">
-                        <span className="w-2 h-2 rounded-full bg-bingo-blue" />
-                        Calm sounds
-                      </span>
                     </div>
                   </div>
 
-                  {/* Character column */}
-                  <div className="relative flex justify-center lg:justify-end">
-                    <div className="relative w-full max-w-sm">
+                  <div className="relative flex min-h-[430px] items-center justify-center lg:justify-end">
+                    <motion.div
+                      className="absolute inset-x-3 bottom-4 top-10 rounded-[3.5rem] border-[4px] border-bingo-navy/10 bg-bingo-blue shadow-pop sm:inset-x-8"
+                      initial={{ opacity: 0, rotate: 3, scale: 0.94 }}
+                      animate={{ opacity: 1, rotate: 2, scale: 1 }}
+                      transition={{ delay: 0.12, type: "spring" }}
+                    />
+                    <div className="absolute inset-x-12 bottom-9 top-20 rounded-[45%] bg-white/35" />
+                    <div className="relative z-10 pt-7">
                       <MrBingoCharacter />
-
-                      {/* Cloud panel behind - simplified to solid */}
-                      <motion.div
-                        className="absolute -z-10 inset-x-4 top-16 bottom-[1rem] rounded-[2.5rem] bg-white shadow-soft"
-                        initial={{ opacity: 0, y: 18 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15, duration: 0.5 }}
-                      />
-
-                      {/* Floating badges */}
-                      <motion.div
-                        className="absolute -left-3 sm:-left-6 top-5 rounded-3xl bg-bingo-yellow/90 px-4 py-2 shadow-soft border border-white/60 text-xs sm:text-sm font-bold text-bingo-navy flex items-center gap-1.5 backdrop-blur-md"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.25, duration: 0.4 }}
-                        whileHover={{ scale: 1.05, rotate: -2 }}
-                      >
-                        <span aria-hidden="true">⭐</span>
-                        Gentle rewards
-                      </motion.div>
-
-                      <motion.div
-                        className="absolute -right-3 sm:-right-6 top-20 rounded-3xl bg-bingo-mint/90 px-4 py-2 shadow-soft border border-white/60 text-xs sm:text-sm font-bold text-bingo-navy flex items-center gap-1.5 backdrop-blur-md"
-                        initial={{ opacity: 0, x: 10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3, duration: 0.4 }}
-                        whileHover={{ scale: 1.05, rotate: 2 }}
-                      >
-                        <span aria-hidden="true">🧩</span>
-                        For all brains
-                      </motion.div>
                     </div>
+
+                    <motion.div
+                      className="absolute left-0 top-10 z-20 rounded-2xl border-[3px] border-bingo-navy/10 bg-bingo-yellow px-4 py-3 font-display text-sm font-bold text-bingo-navy shadow-pop-sm sm:left-2"
+                      initial={{ opacity: 0, x: -15, rotate: -5 }}
+                      animate={{ opacity: 1, x: 0, rotate: -4 }}
+                      transition={{ delay: 0.35 }}
+                    >
+                      High-five rewards
+                    </motion.div>
+                    <motion.div
+                      className="absolute bottom-8 right-0 z-20 max-w-[13rem] rounded-2xl border-[3px] border-bingo-navy/10 bg-white px-4 py-3 text-sm font-extrabold text-bingo-navy shadow-pop-sm sm:right-2"
+                      initial={{ opacity: 0, x: 15, rotate: 4 }}
+                      animate={{ opacity: 1, x: 0, rotate: 3 }}
+                      transition={{ delay: 0.42 }}
+                    >
+                      Ready when you are
+                    </motion.div>
                   </div>
                 </div>
               </motion.section>
             )}
 
             {mode === MODES.CHILD && (
-              <motion.div
-                key="child"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration: 0.35 }}
-              >
+              <motion.div key="child" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
                 <ChildMode />
               </motion.div>
             )}
 
             {mode === MODES.PARENT && (
-              <motion.div
-                key="parent"
-                variants={pageVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration: 0.35 }}
-              >
+              <motion.div key="parent" variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.35 }}>
                 <ParentDashboard />
               </motion.div>
             )}
           </AnimatePresence>
         </main>
-
-        {/* Footer */}
-        <footer className="w-full pb-6 pt-4">
-          <div className="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-between gap-2 text-[0.7rem] text-slate-500 opacity-80 hover:opacity-100 transition-opacity">
-            <p>Made for neurodivergent joy, safety, and calm.</p>
-            <p className="flex gap-2">
-              <span>Accessible‑first UI</span>
-              <span aria-hidden="true">•</span>
-              <span>WCAG‑aware colour choices</span>
-            </p>
-          </div>
-        </footer>
       </div>
     </div>
   );
@@ -261,4 +181,3 @@ function App() {
 }
 
 export default App;
-

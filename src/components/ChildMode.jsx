@@ -23,56 +23,64 @@ const cards = [
     title: "Dyslexia Screening",
     description: "Match identical letters (b-b). Watch for lookalikes!",
     color: "from-bingo-yellow to-bingo-coral",
-    icon: "🧩"
+    icon: "🧩",
+    accent: "bg-bingo-yellow"
   },
   {
     id: "typing",
     title: "Typing Hero",
     description: "Type letters and words to win stars!",
     color: "from-bingo-blue to-bingo-indigo",
-    icon: "⌨️"
+    icon: "⌨️",
+    accent: "bg-bingo-blue"
   },
   {
     id: "memory",
     title: "Memory Grid",
     description: "Remember the lights and win points!",
     color: "from-emerald-400 to-teal-500",
-    icon: "🧠"
+    icon: "🧠",
+    accent: "bg-bingo-mint"
   },
   {
     id: "racer",
     title: "Cerebral Racer",
     description: "Dodge cars and follow the turns!",
     color: "from-bingo-mint to-bingo-blue",
-    icon: "🏎️"
+    icon: "🏎️",
+    accent: "bg-bingo-coral"
   },
   {
     id: "challenge",
     title: "Daily Challenge",
     description: "A tiny challenge crafted just for today.",
     color: "from-bingo-mint to-bingo-blue",
-    icon: "🎯"
+    icon: "🎯",
+    accent: "bg-bingo-indigo"
   },
   {
     id: "diagnostic",
     title: "Focus Diagnostic",
     description: "Test your focus with a fun red dot game!",
     color: "from-purple-400 to-pink-500",
-    icon: "👁️"
+    icon: "👁️",
+    accent: "bg-bingo-lavender"
   },
   {
     id: "emotions",
     title: "Emotion Explorer",
     description: "Can you guess the feeling? Fun picture quiz!",
     color: "from-orange-400 to-amber-500",
-    icon: "🧐"
+    icon: "🧐",
+    accent: "bg-orange-400"
   },
   {
     id: "stars",
     title: "My Stars",
     description: "See all the shiny stars you’ve earned.",
     color: "from-bingo-lavender to-bingo-blue",
-    icon: "⭐"
+    icon: "⭐",
+    accent: "bg-bingo-yellow"
 
   }
 ];
@@ -107,32 +115,28 @@ export function ChildMode() {
   return (
     <section
       aria-label="Child learning playground"
-      className="relative max-w-6xl mx-auto px-4 py-8 pb-16 lg:py-12"
+      className="relative mx-auto max-w-7xl px-4 py-8 pb-16 lg:py-12"
     >
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-center">
+      <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,.65fr)]">
         {/* Left: playful controls & cards */}
         <div>
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-xs font-semibold text-bingo-navy shadow-sm mb-3">
+          <p className="toon-kicker mb-4">
             <span className="text-base" aria-hidden="true">
               ✨
             </span>
-            Friendly, low-text adventures
+            Pick your next adventure
           </p>
-          <h2 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-slate-900 leading-tight mb-2">
-            Let&apos;s learn{" "}
-            <span className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-bingo-coral to-bingo-lavender">
-              your way
-            </span>
-            .
+          <h2 className="mb-3 text-4xl font-bold leading-[0.98] tracking-[-0.03em] text-bingo-navy sm:text-5xl lg:text-6xl">
+            What should we
+            <span className="block text-bingo-coral">play today?</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 mb-6 max-w-xl">
-            Tap a big, friendly card to start. Mr. Bingo keeps screens calm,
-            colourful, and fun—never overwhelming.
+          <p className="mb-7 max-w-xl text-base font-semibold leading-relaxed text-bingo-navy/70">
+            Every challenge is a tiny brain adventure. Choose one big card and Mr. Bingo will be right beside you.
           </p>
 
           {/* Cards */}
           <div
-            className="grid gap-4 sm:grid-cols-3"
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
             aria-label="Main learning actions"
           >
             {cards.map((card, i) => (
@@ -154,25 +158,25 @@ export function ChildMode() {
                     setActiveGame('memory-grid');
                   }
                 }}
-                className="group relative flex flex-col items-center justify-between rounded-3xl bg-white/90 px-4 py-4 sm:px-3 sm:py-5 shadow-soft border border-white/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/70"
+                className="toon-card group relative flex min-h-44 flex-col items-start justify-between overflow-hidden px-5 py-5 text-left focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/60"
                 variants={cardVariants}
                 initial="initial"
                 animate="animate"
                 custom={i}
               >
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 from-bingo-blue/25 to-bingo-lavender/25" />
-                <div className="relative z-10 flex flex-col items-center gap-3">
+                <div className={`absolute -right-8 -top-9 h-28 w-28 rounded-full opacity-20 transition-transform duration-300 group-hover:scale-125 ${card.accent}`} />
+                <div className="relative z-10 flex w-full flex-col items-start gap-4">
                   <div
-                    className={`flex items-center justify-center w-14 h-14 rounded-3xl bg-gradient-to-br ${card.color} shadow-md text-3xl`}
+                    className={`flex h-14 w-14 items-center justify-center rounded-2xl border-[3px] border-bingo-navy/10 bg-gradient-to-br text-3xl shadow-pop-sm ${card.color}`}
                     aria-hidden="true"
                   >
                     {card.icon}
                   </div>
-                  <div className="text-center">
-                    <p className="text-sm sm:text-base font-semibold text-slate-900">
+                  <div>
+                    <p className="font-display text-lg font-bold leading-tight text-bingo-navy">
                       {card.title}
                     </p>
-                    <p className="mt-1 text-[0.68rem] sm:text-xs text-slate-600">
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-bingo-navy/60">
                       {card.description}
                     </p>
                   </div>
@@ -182,21 +186,21 @@ export function ChildMode() {
           </div>
 
           {/* Star rewards bar */}
-          <div className="mt-6 rounded-3xl bg-gradient-to-r from-bingo-yellow/80 via-bingo-mint/80 to-bingo-blue/70 px-4 py-3 shadow-soft border border-white/70">
+          <div className="mt-6 rounded-3xl border-[3px] border-bingo-navy/10 bg-bingo-yellow px-5 py-4 shadow-pop-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-2xl" aria-hidden="true">
                   ⭐
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-bingo-navy">
+                  <p className="font-display text-sm font-bold text-bingo-navy">
                     Today&apos;s Stars
                   </p>
                   <div className="flex items-center gap-1 mt-0.5">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
-                        className={`inline-block w-4 h-4 rounded-full ${star <= 3 ? "bg-amber-400" : "bg-white/60"
+                        className={`inline-block h-4 w-4 rounded-[35%] border border-bingo-navy/10 ${star <= 3 ? "rotate-12 bg-bingo-coral" : "bg-white/70"
                           } shadow-sm`}
                       />
                     ))}
@@ -204,11 +208,11 @@ export function ChildMode() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-[0.68rem] uppercase tracking-wide text-bingo-navy/80 font-semibold">
+                <p className="text-[0.68rem] font-extrabold uppercase tracking-widest text-bingo-navy/70">
                   Level 2
                 </p>
-                <div className="mt-1 w-24 h-2 rounded-full bg-white/50 overflow-hidden">
-                  <div className="h-full w-2/3 bg-gradient-to-r from-amber-400 to-bingo-coral rounded-full" />
+                <div className="mt-1 h-3 w-24 overflow-hidden rounded-full border border-bingo-navy/10 bg-white/60">
+                  <div className="h-full w-2/3 rounded-full bg-bingo-mint" />
                 </div>
               </div>
             </div>
@@ -217,12 +221,12 @@ export function ChildMode() {
 
         {/* Right: Mr. Bingo + speech bubble */}
         <div className="relative flex justify-center lg:justify-end">
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full max-w-sm rounded-[3rem] border-[4px] border-bingo-navy/10 bg-bingo-blue/30 px-4 pt-4 shadow-pop">
             <MrBingoCharacter />
 
             {/* Speech bubble */}
             <motion.div
-              className="absolute -bottom-10 left-1/2 -translate-x-1/2 sm:-right-8 sm:left-auto sm:translate-x-0 rounded-3xl bg-white/95 px-4 py-3 shadow-soft border border-bingo-blue/50 max-w-xs"
+              className="absolute -bottom-10 left-1/2 max-w-xs -translate-x-1/2 rounded-3xl border-[3px] border-bingo-navy/10 bg-white px-5 py-4 font-bold text-bingo-navy shadow-pop-sm sm:-right-8 sm:left-auto sm:translate-x-0"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}

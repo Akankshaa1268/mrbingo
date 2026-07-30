@@ -157,16 +157,16 @@ export const EmotionGame = ({ onBack }) => {
 
     if (gameState === 'menu') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 p-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Emotion Explorer 🧐</h1>
-                <p className="text-slate-400 mb-8 text-center max-w-md">Can you guess the feeling?</p>
+            <div className="game-shell flex min-h-[75vh] flex-col items-center justify-center">
+                <h1 className="mb-2 text-4xl font-bold text-bingo-navy md:text-6xl">Emotion Explorer 🧐</h1>
+                <p className="mb-8 max-w-md text-center font-semibold text-bingo-navy/60">Can you guess the feeling?</p>
 
                 <div className="grid gap-4 w-full max-w-sm">
                     {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
                         <button
                             key={key}
                             onClick={() => startGame(key)}
-                            className={`w-full py-4 rounded-2xl text-xl font-bold text-white shadow-lg transition-transform hover:scale-105 bg-gradient-to-r ${config.color}`}
+                            className={`toon-button w-full bg-gradient-to-r py-4 text-xl text-white ${config.color}`}
                         >
                             {config.label}
                             <span className="block text-xs opacity-75 font-normal mt-1">
@@ -174,7 +174,7 @@ export const EmotionGame = ({ onBack }) => {
                             </span>
                         </button>
                     ))}
-                    <button onClick={onBack} className="mt-4 text-slate-500 hover:text-white">Back</button>
+                    <button onClick={onBack} className="toon-button-secondary mt-4">← Back</button>
                 </div>
             </div>
         );
@@ -182,8 +182,8 @@ export const EmotionGame = ({ onBack }) => {
 
     if (gameState === 'result') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-6">
-                <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border-4 border-slate-100">
+            <div className="celebration-burst game-shell flex min-h-[75vh] flex-col items-center justify-center">
+                <div className="toon-panel w-full max-w-md p-8 text-center">
                     <h2 className="text-3xl font-black text-slate-800 mb-4">Great Job! 🎉</h2>
                     <div className="text-6xl font-black text-indigo-600 mb-2">{score} / {QUESTIONS_PER_SESSION}</div>
                     <p className="text-slate-500 mb-8">Correct Answers</p>
@@ -203,7 +203,7 @@ export const EmotionGame = ({ onBack }) => {
     const currentQ = questions[currentQuestionIndex];
 
     return (
-        <div className="flex flex-col items-center min-h-screen bg-slate-100 p-4">
+        <div className="game-shell flex min-h-screen flex-col items-center">
             {/* Header */}
             <div className="w-full max-w-2xl flex justify-between items-center mb-6 mt-4">
                 <div className="bg-white px-4 py-2 rounded-full font-bold text-slate-700 shadow-sm border border-slate-200">
@@ -219,7 +219,7 @@ export const EmotionGame = ({ onBack }) => {
                 key={currentQ.imagePath}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="bg-white p-4 rounded-3xl shadow-xl mb-8 border-4 border-white transform rotate-1 hover:rotate-0 transition-transform duration-300"
+                className="toon-panel mb-8 rotate-1 p-4 transition-transform duration-300 hover:rotate-0"
             >
                 <div className="w-64 h-64 md:w-80 md:h-80 bg-slate-200 rounded-2xl overflow-hidden relative">
                     {/* We use a simple img tag. If path issues occur, we might see broken images. */}

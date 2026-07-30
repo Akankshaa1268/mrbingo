@@ -195,9 +195,9 @@ export const LetterMatchingGame = ({ onBack }) => {
 
     if (!difficulty) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 w-full max-w-4xl mx-auto">
-                <h2 className="text-4xl font-bold text-slate-800 mb-2 text-center">Dyslexia Screening 🧩</h2>
-                <p className="text-slate-500 mb-8 text-center max-w-md">
+            <div className="game-shell flex min-h-[60vh] max-w-4xl flex-col items-center justify-center">
+                <h2 className="mb-2 text-center text-5xl font-bold text-bingo-navy">Letter Match 🧩</h2>
+                <p className="mb-8 max-w-md text-center font-semibold text-bingo-navy/65">
                     Find the matching confusing letter pairs! <br />
                     (e.g. match <b>'b'</b> with <b>'b'</b>)
                 </p>
@@ -222,7 +222,7 @@ export const LetterMatchingGame = ({ onBack }) => {
                     })}
                 </div>
 
-                <button onClick={onBack} className="mt-12 px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                <button onClick={onBack} className="toon-button-secondary mt-10">
                     Back to Menu
                 </button>
             </div>
@@ -234,9 +234,9 @@ export const LetterMatchingGame = ({ onBack }) => {
     const gridClass = config.grid === 3 ? 'grid-cols-3' : config.grid === 4 ? 'grid-cols-4' : 'grid-cols-5';
 
     return (
-        <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 min-h-[80vh]">
+        <div className="game-shell flex min-h-[80vh] max-w-4xl flex-col items-center">
             {/* Header */}
-            <div className="flex justify-between items-center w-full mb-6 bg-white p-4 rounded-2xl shadow-sm border-2 border-slate-100">
+            <div className="toon-card mb-6 flex w-full items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                     <button onClick={() => setDifficulty(null)} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200">
                         ⬅ Back
@@ -317,7 +317,7 @@ export const LetterMatchingGame = ({ onBack }) => {
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white rounded-3xl p-8 w-full max-w-md text-center shadow-2xl"
+                        className="celebration-burst toon-panel w-full max-w-md p-8 text-center"
                     >
                         <div className="text-6xl mb-4">🎉</div>
                         <h2 className="text-3xl font-black text-slate-800 mb-2">Great Job!</h2>

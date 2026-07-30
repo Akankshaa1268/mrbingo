@@ -137,10 +137,10 @@ export const TypingAdventureGame = ({ onBack }) => {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center"
+        className="celebration-burst game-shell flex min-h-[60vh] flex-col items-center justify-center text-center"
       >
         <div className="text-6xl mb-4">🏆</div>
-        <h2 className="text-4xl font-bold text-slate-800 mb-4">
+        <h2 className="mb-4 text-5xl font-bold text-bingo-navy">
           {level === 1 ? 'Level 1 Complete!' : 'Adventure Complete!'}
         </h2>
         <p className="text-2xl text-slate-600 mb-8">
@@ -149,7 +149,7 @@ export const TypingAdventureGame = ({ onBack }) => {
         <div className="flex gap-4">
           <button
             onClick={onBack}
-            className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300 transition-colors"
+            className="toon-button-secondary"
           >
             Exit
           </button>
@@ -157,14 +157,14 @@ export const TypingAdventureGame = ({ onBack }) => {
           {level === 1 ? (
             <button
               onClick={handleNextLevel}
-              className="px-6 py-3 rounded-2xl bg-bingo-coral text-white font-bold hover:bg-orange-500 transition-colors shadow-lg animate-bounce"
+              className="toon-button bg-bingo-coral text-white"
             >
               Next Level ➡
             </button>
           ) : (
             <button
               onClick={() => { setLevel(1); loadLevel(1); }} // Restart game
-              className="px-6 py-3 rounded-2xl bg-bingo-blue text-white font-bold hover:bg-blue-600 transition-colors shadow-lg"
+              className="toon-button bg-bingo-blue text-bingo-navy"
             >
               Play Again ↺
             </button>
@@ -179,10 +179,10 @@ export const TypingAdventureGame = ({ onBack }) => {
   const currentQ = questions[currentIndex];
 
   return (
-    <div className="max-w-2xl mx-auto p-6 flex flex-col items-center">
+    <div className="game-shell flex max-w-2xl flex-col items-center">
       {/* Header */}
-      <div className="w-full flex justify-between items-center mb-8">
-        <button onClick={onBack} className="text-slate-500 hover:text-slate-700 font-bold">
+      <div className="toon-card mb-8 flex w-full items-center justify-between px-5 py-4">
+        <button onClick={onBack} className="font-extrabold text-bingo-navy hover:text-bingo-coral">
           ← Exit
         </button>
         <div className="flex gap-4 items-center">
@@ -201,7 +201,7 @@ export const TypingAdventureGame = ({ onBack }) => {
         initial={{ x: 50, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: -50, opacity: 0 }}
-        className="bg-white rounded-3xl shadow-xl p-10 w-full text-center border-4 border-bingo-yellow/30 relative overflow-hidden"
+        className="toon-panel relative w-full overflow-hidden p-7 text-center sm:p-10"
       >
         {/* Progress bar background */}
         <div className="absolute top-0 left-0 h-2 bg-bingo-yellow transition-all duration-500" style={{ width: `${((currentIndex) / 10) * 100}%` }} />
@@ -224,7 +224,7 @@ export const TypingAdventureGame = ({ onBack }) => {
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            className="w-full text-center text-4xl font-bold py-4 px-6 rounded-2xl border-4 border-slate-200 focus:border-bingo-blue focus:outline-none focus:ring-4 focus:ring-bingo-blue/20 transition-all"
+            className="toon-input w-full px-6 py-4 text-center text-4xl font-bold"
             placeholder="..."
             autoComplete="off"
             autoFocus
@@ -250,7 +250,7 @@ export const TypingAdventureGame = ({ onBack }) => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-10 rounded-3xl"
+              className="celebration-burst absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-white/95 backdrop-blur-sm"
             >
               <div className="text-center">
                 <div className="text-8xl mb-4">

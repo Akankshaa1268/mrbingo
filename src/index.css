@@ -3,52 +3,29 @@
 @tailwind utilities;
 
 :root {
-  /* Default: Soft Cute Vibes Theme */
-  /* Baby Pink (#FFD6E8), Light Sky Blue (#CDEBFF), Lavender (#E5D9FF) */
-  
-  /* bingo-blue -> Light Sky Blue */
-  --color-bingo-blue: 205 235 255; /* #CDEBFF */
-  
-  /* bingo-mint -> Baby Pink (for background gradients) */
-  --color-bingo-mint: 255 214 232; /* #FFD6E8 */
-  
-  /* bingo-yellow -> Pale Yellow (existing) */
-  --color-bingo-yellow: 255 244 191; /* #FFF4BF */
-  
-  /* bingo-lavender -> Lavender */
-  --color-bingo-lavender: 229 217 255; /* #E5D9FF */
-  
-  /* bingo-coral -> Pastel Coral */
-  --color-bingo-coral: 255 181 167; /* #FFB5A7 */
-  
-  /* bingo-navy -> Keep dark for contrast */
-  --color-bingo-navy: 30 42 59; /* #1E2A3B */
-
-  /* Shadows - Soft Glow */
-  --shadow-soft: 0 18px 45px rgba(229, 217, 255, 0.5);
+  --color-bingo-blue: 57 181 255;
+  --color-bingo-mint: 67 218 144;
+  --color-bingo-yellow: 255 213 59;
+  --color-bingo-lavender: 160 116 255;
+  --color-bingo-indigo: 88 91 255;
+  --color-bingo-coral: 255 91 116;
+  --color-bingo-navy: 31 35 69;
+  --page-bg: #fff8e8;
+  --page-grid: rgba(31, 35, 69, 0.055);
+  --shadow-soft: 0 16px 35px rgba(31, 35, 69, 0.12);
+  --shadow-pop: 0 9px 0 rgba(31, 35, 69, 0.18), 0 20px 36px rgba(31, 35, 69, 0.14);
+  --shadow-pop-sm: 0 5px 0 rgba(31, 35, 69, 0.16), 0 12px 24px rgba(31, 35, 69, 0.1);
 }
 
 .theme-summer {
-  /* Bright Summer Vibes Theme */
-  /* Sunny Yellow (#FFD84D), Bright Sky Blue (#7ED7FF), Coral */
-  
-  /* bingo-blue -> Bright Sky Blue */
-  --color-bingo-blue: 126 215 255; /* #7ED7FF */
-  
-  /* bingo-mint -> Sunny Yellow (for background gradients) */
-  --color-bingo-mint: 255 216 77; /* #FFD84D */
-  
-  /* bingo-yellow -> Paler Yellow for cards */
-  --color-bingo-yellow: 255 236 179; /* #FFECB3 */
-  
-  /* bingo-lavender -> Light Coral/Orange */
-  --color-bingo-lavender: 255 171 145; /* #FFAB91 */
-  
-  /* bingo-coral -> Vibrant Coral */
-  --color-bingo-coral: 255 112 67; /* #FF7043 */
-
-  /* Shadows - Warm Glow */
-  --shadow-soft: 0 18px 45px rgba(255, 216, 77, 0.25);
+  --color-bingo-blue: 38 194 255;
+  --color-bingo-mint: 74 214 108;
+  --color-bingo-yellow: 255 202 43;
+  --color-bingo-lavender: 255 126 78;
+  --color-bingo-indigo: 46 122 255;
+  --color-bingo-coral: 255 78 68;
+  --page-bg: #e9fbff;
+  --page-grid: rgba(31, 35, 69, 0.06);
 }
 
 *,
@@ -58,7 +35,81 @@
 }
 
 body {
-  @apply font-rounded bg-sky-50 text-slate-900 antialiased transition-colors duration-500;
+  @apply m-0 min-w-[320px] font-rounded text-bingo-navy antialiased transition-colors duration-500;
+  background-color: var(--page-bg);
+  background-image: radial-gradient(var(--page-grid) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Fredoka", "Arial Rounded MT Bold", system-ui, sans-serif;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer components {
+  .toon-panel {
+    @apply rounded-[2rem] border-[3px] border-bingo-navy/10 bg-white shadow-pop;
+  }
+
+  .toon-card {
+    @apply rounded-3xl border-[3px] border-bingo-navy/10 bg-white shadow-pop-sm transition duration-200;
+  }
+
+  .toon-card:hover {
+    @apply -translate-y-1 rotate-[-0.5deg];
+  }
+
+  .toon-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-bingo-navy/15 px-5 py-3 font-extrabold shadow-pop-sm transition duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-bingo-blue/45;
+  }
+
+  .toon-button:hover {
+    @apply -translate-y-0.5 brightness-[1.03];
+  }
+
+  .toon-button:active {
+    @apply translate-y-1 scale-[0.97] shadow-none;
+  }
+
+  .toon-button-primary {
+    @apply toon-button bg-bingo-yellow text-bingo-navy;
+  }
+
+  .toon-button-secondary {
+    @apply toon-button bg-white text-bingo-navy;
+  }
+
+  .toon-kicker {
+    @apply inline-flex items-center gap-2 rounded-full border-2 border-bingo-navy/10 bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.13em] text-bingo-navy shadow-pop-sm;
+  }
+
+  .toon-input {
+    @apply rounded-2xl border-[3px] border-bingo-navy/15 bg-white px-4 py-3 text-bingo-navy outline-none transition placeholder:text-slate-400 focus:border-bingo-blue focus:ring-4 focus:ring-bingo-blue/20;
+  }
+
+  .game-shell {
+    @apply relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6;
+  }
+
+  .celebration-burst {
+    background-image:
+      radial-gradient(circle at 10% 20%, rgb(var(--color-bingo-yellow)) 0 4px, transparent 5px),
+      radial-gradient(circle at 85% 15%, rgb(var(--color-bingo-coral)) 0 5px, transparent 6px),
+      radial-gradient(circle at 92% 75%, rgb(var(--color-bingo-blue)) 0 4px, transparent 5px),
+      radial-gradient(circle at 18% 82%, rgb(var(--color-bingo-mint)) 0 5px, transparent 6px);
+  }
 }
 
 .soft-scrollbar::-webkit-scrollbar {
@@ -66,11 +117,26 @@ body {
 }
 
 .soft-scrollbar::-webkit-scrollbar-track {
-  background: rgba(148, 163, 184, 0.1);
+  background: rgba(31, 35, 69, 0.08);
 }
 
 .soft-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.6);
+  background: rgb(var(--color-bingo-blue) / 0.65);
   border-radius: 999px;
 }
 
+::selection {
+  background: rgb(var(--color-bingo-yellow) / 0.75);
+  color: rgb(var(--color-bingo-navy));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

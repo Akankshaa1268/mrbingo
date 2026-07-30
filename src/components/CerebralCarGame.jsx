@@ -265,9 +265,9 @@ export const CerebralCarGame = ({ onBack }) => {
 
     if (!difficulty) {
         return (
-            <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-8 min-h-[60vh]">
-                <h2 className="text-4xl font-bold text-slate-800 mb-2">Cerebral Racer 🏎️</h2>
-                <p className="text-slate-500 mb-8 text-center max-w-md">
+            <div className="game-shell flex min-h-[60vh] max-w-4xl flex-col items-center justify-center">
+                <h2 className="mb-2 text-5xl font-bold text-bingo-navy">Cerebral Racer 🏎️</h2>
+                <p className="mb-8 max-w-md text-center font-semibold text-bingo-navy/65">
                     Choose your difficulty. Dodge the traffic!
                 </p>
 
@@ -293,7 +293,7 @@ export const CerebralCarGame = ({ onBack }) => {
                         );
                     })}
                 </div>
-                <button onClick={onBack} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">
+                <button onClick={onBack} className="toon-button-secondary">
                     Back to Menu
                 </button>
             </div>
@@ -305,7 +305,7 @@ export const CerebralCarGame = ({ onBack }) => {
     const laneWidthPercent = 100 / config.lanes;
 
     return (
-        <div className="relative w-full max-w-2xl mx-auto h-[80vh] bg-slate-800 rounded-3xl overflow-hidden shadow-2xl border-4 border-slate-700">
+        <div className="relative mx-auto h-[80vh] w-full max-w-2xl overflow-hidden rounded-[2.5rem] border-[6px] border-bingo-navy bg-slate-800 shadow-pop">
             {/* Road Surface */}
             <div className="absolute inset-0 flex">
                 {Array.from({ length: config.lanes }).map((_, i) => (
@@ -384,7 +384,7 @@ export const CerebralCarGame = ({ onBack }) => {
                         exit={{ opacity: 0 }}
                         className="absolute bottom-40 left-0 right-0 z-40 flex justify-center pointer-events-none"
                     >
-                        <div className="bg-white/95 backdrop-blur-xl border-4 border-indigo-600 px-10 py-6 rounded-3xl shadow-2xl flex flex-col items-center gap-2">
+                        <div className="toon-panel flex flex-col items-center gap-2 border-bingo-indigo px-10 py-6 backdrop-blur-xl">
                             <div className="text-sm font-bold text-slate-400 uppercase tracking-widest">Dodge</div>
                             <span className="text-6xl font-black text-rose-600 tracking-wider font-mono drop-shadow-sm">{dodgeInstruction.direction}</span>
                         </div>
@@ -412,7 +412,7 @@ export const CerebralCarGame = ({ onBack }) => {
             {/* Game Over Screen */}
             {isGameOver && (
                 <div className="absolute inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-8">
-                    <div className="bg-white rounded-3xl p-8 w-full max-w-md text-center">
+                    <div className="celebration-burst toon-panel w-full max-w-md p-8 text-center">
                         <h2 className="text-3xl font-black text-slate-800 mb-6">Race Finished! 🏁</h2>
                         <div className="grid grid-cols-2 gap-4 mb-8">
                             <StatBox label="Valid Waves" value={score.totalWaves - score.collisions} color="text-indigo-600" />
@@ -421,8 +421,8 @@ export const CerebralCarGame = ({ onBack }) => {
                             <StatBox label="Score" value={(score.totalWaves - score.collisions) * 100} color="text-emerald-600" />
                         </div>
                         <div className="flex gap-4 justify-center">
-                            <button onClick={() => setDifficulty(null)} className="px-6 py-3 rounded-2xl bg-slate-200 text-slate-700 font-bold hover:bg-slate-300">Menu</button>
-                            <button onClick={() => startGame(difficulty)} className="px-6 py-3 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700">Race Again</button>
+                            <button onClick={() => setDifficulty(null)} className="toon-button-secondary">Menu</button>
+                            <button onClick={() => startGame(difficulty)} className="toon-button bg-bingo-indigo text-white">Race Again</button>
                         </div>
                     </div>
                 </div>

@@ -2,137 +2,105 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
 
-const floatTransition = {
-  duration: 3.2,
-  repeat: Infinity,
-  repeatType: "reverse",
-  ease: "easeInOut"
+const sizes = {
+  sm: {
+    shell: "w-36 h-44",
+    head: "w-24 h-[5.5rem]",
+    eyes: "w-7 h-8",
+    body: "w-[4.6rem] h-14"
+  },
+  lg: {
+    shell: "w-72 h-[22rem]",
+    head: "w-52 h-44",
+    eyes: "w-12 h-14",
+    body: "w-36 h-28"
+  }
 };
 
-const waveTransition = {
-  duration: 2.5,
-  repeat: Infinity,
-  repeatType: "reverse",
-  ease: "easeInOut"
-};
-
-const bounceTransition = {
-  duration: 0.8,
-  repeat: Infinity,
-  repeatType: "reverse",
-  ease: "easeOut"
-};
-
-export function MrBingoCharacter({ size = "lg" }) {
+export function MrBingoCharacter({ size = "lg", mood = "happy" }) {
   const { isSummer } = useTheme();
-
-  // Adjusted sizes to account for body
-  const containerClass = size === "lg" ? "w-64 h-80" : "w-40 h-48";
-  const headSize = size === "lg" ? "w-48 h-44" : "w-28 h-24";
-  const bodySize = size === "lg" ? "w-32 h-24" : "w-20 h-14";
-
-  // Theme colors
-  const mainGradient = isSummer
-    ? "from-yellow-300 via-orange-200 to-red-300"
-    : "from-blue-200 via-indigo-200 to-purple-200";
-
+  const scale = size === "lg" ? sizes.lg : sizes.sm;
+  const isSmall = size !== "lg";
+  const faceGradient = isSummer
+    ? "from-[#ffd33d] via-[#ff9f43] to-[#ff5b74]"
+    : "from-[#61d7ff] via-[#7c8cff] to-[#b276ff]";
   const bodyGradient = isSummer
-    ? "from-orange-300 via-yellow-200 to-orange-100"
-    : "from-indigo-300 via-purple-200 to-blue-200";
-
-  const blushColor = isSummer ? "bg-rose-400/50" : "bg-pink-400/40";
+    ? "from-[#ff7b4d] to-[#ff4e44]"
+    : "from-[#6f75ff] to-[#8f56e8]";
 
   return (
     <motion.div
-      aria-label="Mr. Bingo, your friendly learning buddy"
+      aria-label={`Mr. Bingo, your ${mood} learning buddy`}
       role="img"
-      className={`relative ${containerClass} flex flex-col items-center justify-end pb-4 mx-auto`}
-      animate={{ y: [0, -8, 0] }}
-      transition={floatTransition}
+      className={`relative ${scale.shell} mx-auto flex flex-col items-center justify-end`}
+      animate={{ y: [0, -7, 0], rotate: [0, -0.7, 0.7, 0] }}
+      transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
     >
-      {/* Glow Effect Behind */}
-      <div className={`absolute inset-0 blur-3xl opacity-40 rounded-full scale-110 ${isSummer ? "bg-yellow-200" : "bg-blue-200"}`} />
+      <div className="absolute inset-x-6 top-10 bottom-4 rounded-[45%] bg-bingo-yellow/30 blur-3xl" />
+      <motion.span
+        className={`absolute ${isSmall ? "right-1 top-8 text-lg" : "-right-1 top-10 text-3xl"} text-bingo-yellow drop-shadow`}
+        animate={{ scale: [0.8, 1.18, 0.8], rotate: [0, 18, 0] }}
+        transition={{ duration: 2.6, repeat: Infinity }}
+      >
+        ✦
+      </motion.span>
 
-      {/* Head Group */}
       <div className="relative z-20 flex flex-col items-center">
-        {/* Antenna */}
         <motion.div
-          className="absolute -top-10 flex flex-col items-center gap-0.5 z-0"
-          animate={{ rotate: [-5, 5, -5] }}
-          transition={waveTransition}
+          className={`absolute ${isSmall ? "-top-7" : "-top-11"} z-0 flex flex-col items-center`}
+          animate={{ rotate: [-7, 7, -7] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
         >
-          <div className={`w-5 h-5 rounded-full shadow-sm border-2 border-white ${isSummer ? "bg-yellow-400" : "bg-indigo-400"}`} />
-          <div className="w-1 h-5 bg-slate-300 rounded-full" />
+          <div className={`${isSmall ? "h-4 w-4" : "h-7 w-7"} rounded-full border-[3px] border-white bg-bingo-yellow shadow-pop-sm`} />
+          <div className={`${isSmall ? "h-3 w-1" : "h-6 w-2"} rounded-full bg-bingo-navy/40`} />
         </motion.div>
 
-        {/* Head Shape */}
-        <div className={`relative ${headSize} rounded-[2.5rem] bg-gradient-to-br ${mainGradient} shadow-[0_8px_20px_rgba(0,0,0,0.1),inset_0_-4px_8px_rgba(0,0,0,0.05),inset_0_4px_12px_rgba(255,255,255,0.6)] flex items-center justify-center border-4 border-white z-20`}>
-
-          {/* Face Container */}
-          <div className="relative w-full h-full flex flex-col items-center justify-center pt-4">
-
-            {/* Eyes */}
-            <div className="flex gap-4 mb-2">
-              <motion.div
-                className="relative w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-inner overflow-hidden"
-                animate={{ scaleY: [1, 0.1, 1] }}
-                transition={{ duration: 4, repeat: Infinity, times: [0, 0.05, 0.1], delay: 1 }}
-              >
-                <div className="absolute top-2 right-2 w-3 h-3 bg-white rounded-full opacity-90" />
-                <div className="absolute bottom-2 left-3 w-1.5 h-1.5 bg-white/50 rounded-full" />
-              </motion.div>
-
-              <motion.div
-                className="relative w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center shadow-inner overflow-hidden"
-                animate={{ scaleY: [1, 0.1, 1] }}
-                transition={{ duration: 4, repeat: Infinity, times: [0, 0.05, 0.1], delay: 1 }}
-              >
-                <div className="absolute top-2 right-2 w-3 h-3 bg-white rounded-full opacity-90" />
-                <div className="absolute bottom-2 left-3 w-1.5 h-1.5 bg-white/50 rounded-full" />
-              </motion.div>
+        <div className={`relative ${scale.head} z-10 overflow-hidden rounded-[38%_42%_36%_40%] border-[5px] border-white bg-gradient-to-br ${faceGradient} shadow-[0_10px_0_rgba(31,35,69,.16),inset_12px_14px_22px_rgba(255,255,255,.48),inset_-12px_-14px_20px_rgba(31,35,69,.13)]`}>
+          <div className="absolute left-[12%] top-[8%] h-[22%] w-[45%] -rotate-12 rounded-full bg-white/45 blur-sm" />
+          <div className={`absolute inset-0 flex items-center justify-center ${isSmall ? "pt-3" : "pt-5"}`}>
+            <div className={`flex ${isSmall ? "gap-2" : "gap-5"}`}>
+              {[0, 1].map((eye) => (
+                <motion.div
+                  key={eye}
+                  className={`relative ${scale.eyes} overflow-hidden rounded-[48%] border-[3px] border-white/80 bg-bingo-navy shadow-inner`}
+                  animate={{ scaleY: [1, 1, 0.08, 1, 1] }}
+                  transition={{ duration: 4.6, repeat: Infinity, times: [0, 0.42, 0.45, 0.48, 1], delay: eye * 0.04 }}
+                >
+                  <div className={`absolute ${isSmall ? "right-1 top-1 h-2 w-2" : "right-2 top-2 h-4 w-4"} rounded-full bg-white`} />
+                  <div className={`absolute ${isSmall ? "bottom-1 left-2 h-1 w-1" : "bottom-2 left-3 h-2 w-2"} rounded-full bg-bingo-blue`} />
+                </motion.div>
+              ))}
             </div>
-
-            {/* Blush */}
-            <div className="flex gap-10 absolute top-[3.2rem]">
-              <div className={`w-5 h-3 rounded-full blur-sm ${blushColor}`} />
-              <div className={`w-5 h-3 rounded-full blur-sm ${blushColor}`} />
-            </div>
-
-            {/* Mouth */}
-            <div className="w-6 h-3 mt-1 rounded-b-full bg-slate-800/80 overflow-hidden relative">
-              <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-4 h-3 bg-rose-400 rounded-full opacity-80" />
-            </div>
+          </div>
+          <div className={`absolute ${isSmall ? "bottom-4 left-4 h-2 w-4" : "bottom-9 left-7 h-3 w-7"} rounded-full bg-bingo-coral/55 blur-[2px]`} />
+          <div className={`absolute ${isSmall ? "bottom-4 right-4 h-2 w-4" : "bottom-9 right-7 h-3 w-7"} rounded-full bg-bingo-coral/55 blur-[2px]`} />
+          <div className={`absolute left-1/2 -translate-x-1/2 overflow-hidden bg-bingo-navy ${isSmall ? "bottom-4 h-3 w-5 rounded-b-full" : "bottom-8 h-5 w-9 rounded-b-[1.5rem]"}`}>
+            <div className="absolute -bottom-1 left-1/2 h-3 w-5 -translate-x-1/2 rounded-full bg-bingo-coral" />
           </div>
         </div>
       </div>
 
-      {/* Body Group */}
-      <div className="relative z-10 -mt-6">
-        {/* Main Body */}
-        <div className={`relative ${bodySize} rounded-[2rem] bg-gradient-to-b ${bodyGradient} shadow-md border-4 border-white flex justify-center`} />
-
-        {/* Arms */}
+      <div className={`relative z-10 ${isSmall ? "-mt-3" : "-mt-7"}`}>
+        <div className={`relative ${scale.body} rounded-[42%_42%_34%_34%] border-[5px] border-white bg-gradient-to-b ${bodyGradient} shadow-[0_9px_0_rgba(31,35,69,.17),inset_8px_10px_14px_rgba(255,255,255,.32)]`}>
+          <div className={`absolute left-1/2 -translate-x-1/2 rounded-full border-2 border-white/60 bg-bingo-yellow text-center font-display font-bold text-bingo-navy shadow-inner ${isSmall ? "top-3 h-7 w-7 text-sm leading-6" : "top-6 h-12 w-12 text-2xl leading-[2.6rem]"}`}>
+            B
+          </div>
+        </div>
         <motion.div
-          className={`absolute top-4 -left-3 w-4 h-10 rounded-full border-2 border-white shadow-sm origin-top-right ${isSummer ? "bg-orange-300" : "bg-indigo-300"}`}
+          className={`absolute origin-top-right rounded-full border-[3px] border-white bg-bingo-indigo shadow-pop-sm ${isSmall ? "-left-3 top-3 h-9 w-3" : "-left-5 top-6 h-16 w-6"}`}
           animate={{ rotate: [10, -5, 10] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
         />
-
-        {/* Waving Arm */}
         <motion.div
-          className={`absolute top-2 -right-4 w-4 h-12 rounded-full border-2 border-white shadow-sm origin-bottom-left ${isSummer ? "bg-orange-300" : "bg-indigo-300"}`}
-          animate={{ rotate: [-10, 25, -10] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          className={`absolute origin-bottom-left rounded-full border-[3px] border-white bg-bingo-indigo shadow-pop-sm ${isSmall ? "-right-4 top-0 h-11 w-3" : "-right-7 top-1 h-20 w-6"}`}
+          animate={{ rotate: [-12, 28, -12] }}
+          transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
         />
-
-        {/* Legs */}
-        <div className="absolute -bottom-3 left-6 w-5 h-6 rounded-b-xl bg-slate-800 border-2 border-white" />
-        <div className="absolute -bottom-3 right-6 w-5 h-6 rounded-b-xl bg-slate-800 border-2 border-white" />
+        <div className={`absolute rounded-b-2xl border-[3px] border-white bg-bingo-navy ${isSmall ? "-bottom-3 left-3 h-5 w-4" : "-bottom-5 left-7 h-8 w-7"}`} />
+        <div className={`absolute rounded-b-2xl border-[3px] border-white bg-bingo-navy ${isSmall ? "-bottom-3 right-3 h-5 w-4" : "-bottom-5 right-7 h-8 w-7"}`} />
       </div>
 
-      {/* Shadow */}
-      <div className="absolute bottom-2 w-24 h-4 bg-black/10 rounded-[100%] blur-md z-0 scale-x-150" />
-
+      <div className={`absolute bottom-0 rounded-[100%] bg-bingo-navy/15 blur-md ${isSmall ? "h-3 w-20" : "h-5 w-40"}`} />
     </motion.div>
   );
 }
