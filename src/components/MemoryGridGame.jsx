@@ -132,20 +132,21 @@ export const MemoryGridGame = ({ onBack }) => {
 
     if (gameState === 'start') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
-                <h2 className="text-4xl font-bold text-slate-800 mb-6">Memory Grid</h2>
-                <p className="text-xl text-slate-600 mb-8 max-w-md">
+            <div className="game-shell flex min-h-[60vh] flex-col items-center justify-center text-center">
+                <div className="mb-4 text-7xl">🧠</div>
+                <h2 className="mb-4 text-5xl font-bold text-bingo-navy">Memory Grid</h2>
+                <p className="mb-8 max-w-md text-lg font-semibold text-bingo-navy/65">
                     Watch the pattern of lights, then tap the squares to repeat it.
                     <br /><br />
                     8 Rounds. Get ready!
                 </p>
                 <button
                     onClick={startRound}
-                    className="px-8 py-4 rounded-2xl bg-bingo-blue text-white font-bold text-xl shadow-lg hover:scale-105 transition-transform"
+                    className="toon-button-primary px-8 py-4 text-xl"
                 >
                     Start Game
                 </button>
-                <button onClick={onBack} className="mt-8 text-slate-400 font-bold hover:text-slate-600">Back</button>
+                <button onClick={onBack} className="toon-button-secondary mt-7">← Back</button>
             </div>
         );
     }
@@ -155,15 +156,15 @@ export const MemoryGridGame = ({ onBack }) => {
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center"
+                className="celebration-burst game-shell flex min-h-[60vh] flex-col items-center justify-center text-center"
             >
                 <div className="text-6xl mb-4">🧠</div>
-                <h2 className="text-4xl font-bold text-slate-800 mb-4">Memory Master!</h2>
+                <h2 className="mb-4 text-5xl font-bold text-bingo-navy">Memory Master!</h2>
                 <p className="text-2xl text-slate-600 mb-8">
                     Final Score: <span className="font-bold text-bingo-coral">{score}</span>
                 </p>
 
-                <div className="bg-slate-50 rounded-2xl p-4 mb-8 w-full max-w-md max-h-60 overflow-y-auto">
+                <div className="toon-panel mb-8 max-h-60 w-full max-w-md overflow-y-auto p-5">
                     <h3 className="font-bold text-slate-700 mb-2">Round Details</h3>
                     {roundTimes.map((rt, i) => (
                         <div key={i} className="flex justify-between text-sm py-1 border-b border-slate-100 last:border-0">
@@ -186,10 +187,10 @@ export const MemoryGridGame = ({ onBack }) => {
     }
 
     return (
-        <div className="max-w-2xl mx-auto p-6 flex flex-col items-center">
+        <div className="game-shell flex max-w-2xl flex-col items-center">
             {/* Header */}
-            <div className="w-full flex justify-between items-center mb-8">
-                <button onClick={onBack} className="text-slate-500 hover:text-slate-700 font-bold">
+            <div className="toon-card mb-8 flex w-full items-center justify-between px-5 py-4">
+                <button onClick={onBack} className="font-extrabold text-bingo-navy hover:text-bingo-coral">
                     ← Exit
                 </button>
                 <div className="flex gap-6 font-bold text-slate-700">
@@ -213,7 +214,7 @@ export const MemoryGridGame = ({ onBack }) => {
 
             {/* Grid */}
             <div
-                className="grid grid-cols-5 gap-3 p-4 bg-slate-100 rounded-3xl shadow-inner"
+                className="grid grid-cols-5 gap-3 rounded-[2rem] border-[4px] border-bingo-navy/10 bg-bingo-blue/15 p-4 shadow-inner"
                 style={{ width: 'fit-content' }}
             >
                 {Array.from({ length: TOTAL_TILES }).map((_, i) => (

@@ -139,7 +139,7 @@ function SummaryCard({ title, value, sub, color, iconType, isSoftWarning }) {
     <motion.div
       whileHover={{ y: -5 }}
       transition={{ type: "spring", stiffness: 300 }}
-      className={`relative overflow-hidden rounded-3xl p-5 shadow-sm border border-white/50 bg-gradient-to-br ${color} flex flex-col justify-between min-h-[140px]`}
+      className={`relative flex min-h-[145px] flex-col justify-between overflow-hidden rounded-3xl border-[3px] border-bingo-navy/10 bg-gradient-to-br p-5 shadow-pop-sm ${color}`}
     >
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
@@ -245,7 +245,7 @@ function SkillBarChart() {
 
 function ChildSnapshotCard() {
   return (
-    <div className="bg-white rounded-3xl p-6 shadow-soft border border-slate-100 flex flex-col items-center text-center h-full">
+    <div className="toon-panel flex h-full flex-col items-center p-6 text-center">
       <div className="mb-4 relative">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-bingo-yellow via-bingo-coral to-bingo-lavender p-1">
           <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-2xl font-bold text-slate-800">
@@ -348,12 +348,12 @@ function CommunityPod() {
       {subTab === 'communities' && (
         <div className="grid gap-4 sm:grid-cols-2">
           {COMMUNITIES.map(c => (
-            <div key={c.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center hover:shadow-md transition-shadow">
+            <div key={c.id} className="toon-card flex items-center justify-between p-5">
               <div>
                 <h4 className="font-bold text-slate-800">{c.name}</h4>
                 <p className="text-xs text-slate-500 mt-1">{c.members.toLocaleString()} members</p>
               </div>
-              <button className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-colors">
+              <button className="toon-button min-h-10 bg-bingo-mint px-4 py-2 text-xs text-bingo-navy">
                 Join
               </button>
             </div>
@@ -363,14 +363,14 @@ function CommunityPod() {
 
       {subTab === 'vent' && (
         <div className="space-y-6">
-          <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+          <div className="toon-card p-5">
             <label className="block text-sm font-semibold text-slate-700 mb-2">Write a Vent (Anonymous)</label>
             <textarea
-              className="w-full border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-slate-900 focus:border-slate-900 min-h-[100px]"
+              className="toon-input min-h-[100px] w-full text-sm"
               placeholder="Share your thoughts anonymously... This is a safe, judgment-free space."
             ></textarea>
             <div className="flex justify-end mt-3">
-              <button className="px-5 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+              <button className="toon-button bg-bingo-indigo px-5 py-2.5 text-sm text-white">
                 Post Anonymously
               </button>
             </div>
@@ -402,7 +402,7 @@ function ActivityPlans() {
       <h3 className="text-lg font-bold text-slate-900">Recommended Plans</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         {ACTIVITY_PLANS.map(plan => (
-          <div key={plan.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:border-slate-300 transition-colors group">
+          <div key={plan.id} className="toon-card group cursor-pointer p-5">
             <div className="flex justify-between items-start mb-2">
               <h4 className="font-bold text-slate-800 group-hover:text-bingo-blue transition-colors">{plan.title}</h4>
               <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg text-xs font-medium">{plan.duration}</span>
@@ -525,7 +525,7 @@ function TherapistBooking() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Filters */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="toon-card flex flex-col items-center justify-between gap-4 p-5 sm:flex-row">
         <div className="flex bg-slate-100 p-1 rounded-xl">
           <button
             onClick={() => setMode('online')}
@@ -548,7 +548,7 @@ function TherapistBooking() {
               placeholder="Enter Zip Code or City"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none"
+              className="toon-input w-full px-4 py-2.5 text-sm"
             />
           </div>
         )}
@@ -557,7 +557,7 @@ function TherapistBooking() {
       {/* List */}
       <div className="grid gap-4">
         {filteredTherapists.map(t => (
-          <div key={t.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-center hover:border-bingo-blue transition-colors group">
+          <div key={t.id} className="toon-card group flex flex-col items-center justify-between p-5 sm:flex-row">
             <div className="flex items-center gap-4 mb-4 sm:mb-0 w-full sm:w-auto">
               <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-lg font-bold text-slate-500">
                 {t.name.split(' ').map(n => n[0]).join('')}
@@ -568,7 +568,7 @@ function TherapistBooking() {
                 <p className="text-xs text-slate-400 mt-0.5">{mode === 'offline' ? `📍 ${t.location}` : '🌐 Virtual Session'}</p>
               </div>
             </div>
-            <button className="w-full sm:w-auto px-6 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-slate-800 transition-colors">
+            <button className="toon-button w-full bg-bingo-indigo px-6 py-2.5 text-sm text-white sm:w-auto">
               Book Now
             </button>
           </div>
@@ -604,7 +604,7 @@ function AnalyticsView() {
         {/* Left Column (Charts) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Line Chart */}
-          <div className="bg-white rounded-3xl p-6 shadow-soft border border-slate-100">
+          <div className="toon-panel p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-slate-900">Learning Progress</h3>
               <span className="text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Last 30 Days</span>
@@ -613,7 +613,7 @@ function AnalyticsView() {
           </div>
 
           {/* Bar Chart */}
-          <div className="bg-white rounded-3xl p-6 shadow-soft border border-slate-100">
+          <div className="toon-panel p-6">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Skill Breakdown</h3>
             <SkillBarChart />
           </div>
@@ -626,7 +626,7 @@ function AnalyticsView() {
       </div>
 
       {/* Bottom Section - Recent Activity Table */}
-      <div className="bg-white rounded-3xl p-6 shadow-soft border border-slate-100">
+      <div className="toon-panel p-6">
         <h3 className="text-lg font-bold text-slate-900 mb-4">Recent Activity</h3>
         <RecentActivityTable />
       </div>
@@ -653,22 +653,22 @@ export function ParentDashboard() {
   return (
     <section
       aria-label="Parent and therapist dashboard"
-      className="relative max-w-7xl mx-auto px-4 py-8 pb-16 lg:py-12"
+      className="relative mx-auto max-w-7xl px-4 py-8 pb-16 lg:py-12"
     >
-      <div className="bg-white/90 backdrop-blur-sm rounded-4xl shadow-soft border border-slate-100 overflow-hidden flex flex-col lg:flex-row min-h-[800px]">
+      <div className="toon-panel flex min-h-[800px] flex-col overflow-hidden lg:flex-row">
         {/* Sidebar */}
-        <aside className="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-slate-100 bg-gradient-to-b from-slate-50/80 to-white/80 p-6 flex flex-col">
+        <aside className="flex w-full flex-col border-b-[3px] border-bingo-navy/10 bg-bingo-yellow/20 p-6 lg:w-72 lg:border-b-0 lg:border-r-[3px]">
           <div className="pb-8 border-b border-slate-100 mb-6 flex items-center justify-between">
             <div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">
+              <p className="text-xs font-extrabold uppercase tracking-widest text-bingo-coral">
                 Parent Mode
               </p>
               <h2 className="text-xl font-extrabold text-slate-900 mt-1">
                 Dashboard
               </h2>
             </div>
-            <span className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shadow-md">
-              MB
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-bingo-navy/10 bg-bingo-yellow font-display text-sm font-bold text-bingo-navy shadow-pop-sm">
+              B!
             </span>
           </div>
 
@@ -713,9 +713,9 @@ export function ParentDashboard() {
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 bg-slate-50/50 p-6 lg:p-10 overflow-y-auto soft-scrollbar">
+        <main className="soft-scrollbar flex-1 overflow-y-auto bg-white/55 p-6 lg:p-10">
           <header className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <h1 className="text-2xl font-extrabold text-slate-900">
+            <h1 className="text-3xl font-bold text-bingo-navy">
               {getTabLabel(activeTab)}
             </h1>
             <div className="flex items-center gap-3">
@@ -751,8 +751,8 @@ function SidebarBtn({ isActive, onClick, icon, label }) {
       type="button"
       onClick={onClick}
       className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-200 group ${isActive
-        ? 'bg-slate-900 text-white shadow-soft translate-x-1'
-        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+        ? 'translate-x-1 bg-bingo-indigo text-white shadow-pop-sm'
+        : 'text-bingo-navy/60 hover:bg-white hover:text-bingo-navy'
         }`}
     >
       <span className={`${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>

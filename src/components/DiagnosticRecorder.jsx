@@ -292,7 +292,7 @@ const DiagnosticRecorder = ({ onBack }) => {
     };
 
     return (
-        <div className="relative h-screen w-full bg-black overflow-hidden">
+        <div className="relative h-screen w-full overflow-hidden bg-bingo-navy">
             {/* 1. LAYERS */}
             <video 
                 ref={videoRef} 
@@ -310,10 +310,10 @@ const DiagnosticRecorder = ({ onBack }) => {
 
             {/* 2. OVERLAYS */}
             {(gameState === 'loading' || gameState === 'ready') && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gray-900 text-white">
-                    <h1 className="text-3xl font-bold mb-4">Focus Challenge</h1>
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-bingo-navy p-5 text-white">
+                    <h1 className="mb-4 text-5xl font-bold">Focus Challenge</h1>
                     {gameState === 'loading' && (
-                        <div className="animate-pulse text-yellow-400">Loading AI...</div>
+                        <div className="toon-kicker animate-pulse text-bingo-navy">🤖 Mr. Bingo is getting ready…</div>
                     )}
                     {gameState === 'ready' && (
                         <div className="text-center">
@@ -322,7 +322,7 @@ const DiagnosticRecorder = ({ onBack }) => {
                                 Ignore the falling shapes.<br/>
                                 Keep your eyes on the <b>Red Dot</b>.
                             </p>
-                            <button onClick={startGame} className="bg-blue-600 px-8 py-3 rounded-lg font-bold hover:bg-blue-500 shadow-lg">
+                            <button onClick={startGame} className="toon-button-primary px-8">
                                 Start 30s Test
                             </button>
                         </div>
@@ -331,8 +331,8 @@ const DiagnosticRecorder = ({ onBack }) => {
             )}
 
             {gameState === 'result' && report && (
-                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white text-gray-900">
-                    <div className="bg-white p-8 rounded-xl shadow-2xl w-96 border border-gray-200 text-center">
+                <div className="celebration-burst absolute inset-0 z-50 flex flex-col items-center justify-center bg-bingo-yellow/20 p-5 text-bingo-navy">
+                    <div className="toon-panel w-full max-w-sm p-8 text-center">
                         <h2 className="text-2xl font-bold mb-4">Time's Up! 🏁</h2>
                         <div className="text-6xl font-black text-blue-600 mb-2">{report.focusScore}%</div>
                         <div className="text-gray-500 mb-6">Focus Score</div>
@@ -344,7 +344,7 @@ const DiagnosticRecorder = ({ onBack }) => {
                             <div className="font-bold text-red-500">{report.totalDistraction}s</div>
                         </div>
 
-                        <button onClick={startGame} className="w-full mt-6 bg-gray-800 text-white py-3 rounded-lg font-bold hover:bg-black">
+                        <button onClick={startGame} className="toon-button mt-6 w-full bg-bingo-indigo text-white">
                             Try Again
                         </button>
                     </div>
@@ -355,7 +355,7 @@ const DiagnosticRecorder = ({ onBack }) => {
             {gameState === 'playing' && (
                 <button 
                     onClick={stopGame}
-                    className="absolute top-4 right-4 z-40 bg-red-600/50 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-bold"
+                    className="toon-button absolute right-4 top-4 z-40 min-h-10 bg-bingo-coral px-4 py-2 text-sm text-white"
                 >
                     Quit
                 </button>
