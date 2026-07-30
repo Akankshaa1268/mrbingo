@@ -17,7 +17,9 @@ const ROUND_CONFIG = [
     { length: 6, penalty: 3 },  // Round 8
 ];
 
-export const MemoryGridGame = ({ onBack }) => {
+export const MemoryGridGame = ({ onBack, difficulty = "EASY" }) => {
+    const previewDuration = { EASY: 1000, MEDIUM: 720, HARD: 480 }[difficulty] || 1000;
+    const gapDuration = { EASY: 400, MEDIUM: 300, HARD: 220 }[difficulty] || 400;
     const [round, setRound] = useState(1);
     const [score, setScore] = useState(100);
     const [sequence, setSequence] = useState([]);
@@ -69,7 +71,7 @@ export const MemoryGridGame = ({ onBack }) => {
         if (gameState !== 'finished' || recordedResultRef.current) return;
         const successfulRounds = roundTimes.filter((item) => item.result === 'success').length;
         recordActivity({
-            activity: 'Memory Grid',
+            activity: `Memory Grid — ${difficulty[0] + difficulty.slice(1).toLowerCase()}`,
             skill: 'memory',
             score: successfulRounds,
             maxScore: TOTAL_ROUNDS,
@@ -88,10 +90,10 @@ export const MemoryGridGame = ({ onBack }) => {
         for (let i = 0; i < sequence.length; i++) {
             setActiveTile(sequence[i]);
             // Slower speed: 1000ms light up
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, previewDuration));
             setActiveTile(null);
             // Slower gap: 400ms
-            await new Promise(r => setTimeout(r, 400));
+            await new Promise(r => setTimeout(r, gapDuration));
         }
 
         setGameState('input');

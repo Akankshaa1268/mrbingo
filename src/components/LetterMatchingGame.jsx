@@ -24,7 +24,7 @@ const DIFFICULTY_LEVELS = {
     HARD: { label: 'Hard', grid: 5, pairs: 12, labelColor: 'text-red-500', borderColor: 'border-red-400' }, // 5x5 = 25 (12 pairs + 1 free)
 };
 
-export const LetterMatchingGame = ({ onBack }) => {
+export const LetterMatchingGame = ({ onBack, initialDifficulty }) => {
     // Game State
     const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD' or null (menu)
     const [cards, setCards] = useState([]);
@@ -136,6 +136,10 @@ export const LetterMatchingGame = ({ onBack }) => {
         // Start Timer
         setIsTimerRunning(true);
     };
+
+    useEffect(() => {
+        if (initialDifficulty && !difficulty) startGame(initialDifficulty);
+    }, [initialDifficulty]);
 
     const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
 

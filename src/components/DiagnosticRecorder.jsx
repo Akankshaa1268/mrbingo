@@ -1,18 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
 import { recordActivity } from '../utils/activityHistory.js';
+import faceLandmarkerModel from '../public/face_landmarker.task?url';
 
 // --- 1. LOGIC ENGINE (Unchanged) ---
 class SocialDiagnosticModule {
     constructor() {
-        this.CHAR_ZONE_MIN = 0.45;
-        this.CHAR_ZONE_MAX = 0.55;
+        this.MOVEMENT_TOLERANCE = 0.065;
         this.total_focus_time = 0.0;
         this.total_distraction_time = 0.0;
         this.current_streak = 0.0;
         this.max_streak = 0.0;
-        this.LEFT_EYE = [33, 133, 468]; 
-        this.RIGHT_EYE = [362, 263, 473];
+        this.LEFT_EYE = [33, 133, 159, 145, 468];
+        this.RIGHT_EYE = [362, 263, 386, 374, 473];
+        this.calibrationSamples = [];
+        this.baseline = null;
     }
 
     _dist(p1, p2) {
@@ -20,33 +22,60 @@ class SocialDiagnosticModule {
     }
 
     _get_gaze_ratio(landmarks, indices) {
-        const p1 = landmarks[indices[0]]; 
-        const p2 = landmarks[indices[1]]; 
-        const iris = landmarks[indices[2]];
-        const eye_width = this._dist(p1, p2);
-        const dist_to_center = this._dist(p1, iris);
-        if (eye_width === 0) return 0.5;
-        return dist_to_center / eye_width;
+        const left = landmarks[indices[0]];
+        const right = landmarks[indices[1]];
+        const top = landmarks[indices[2]];
+        const bottom = landmarks[indices[3]];
+        const iris = landmarks[indices[4]];
+        const width = Math.abs(right.x - left.x);
+        const height = Math.abs(bottom.y - top.y);
+        return {
+            x: width ? (iris.x - Math.min(left.x, right.x)) / width : 0.5,
+            y: height ? (iris.y - Math.min(top.y, bottom.y)) / height : 0.5,
+        };
     }
 
     process(landmarks, dt) {
         if (!landmarks) return null;
         const leftRatio = this._get_gaze_ratio(landmarks, this.LEFT_EYE);
         const rightRatio = this._get_gaze_ratio(landmarks, this.RIGHT_EYE);
-        const avgGaze = (leftRatio + rightRatio) / 2.0;
+        const gaze = {
+            x: (leftRatio.x + rightRatio.x) / 2,
+            y: (leftRatio.y + rightRatio.y) / 2,
+        };
+
+        if (!this.baseline) {
+            this.calibrationSamples.push(gaze);
+            if (this.calibrationSamples.length >= 24) {
+                this.baseline = {
+                    x: this.calibrationSamples.reduce((sum, sample) => sum + sample.x, 0) / this.calibrationSamples.length,
+                    y: this.calibrationSamples.reduce((sum, sample) => sum + sample.y, 0) / this.calibrationSamples.length,
+                };
+            }
+            return {
+                gazeScore: 0,
+                currentZone: "CALIBRATING",
+                isFocused: true,
+                isCalibrating: true,
+                currentStreak: 0,
+                landmarks,
+            };
+        }
+
+        const movement = Math.hypot(gaze.x - this.baseline.x, gaze.y - this.baseline.y);
 
         let zone = "UNKNOWN";
         let isFocused = false;
 
-        if (avgGaze >= this.CHAR_ZONE_MIN && avgGaze <= this.CHAR_ZONE_MAX) {
-            zone = "CHARACTER_EYES";
+        if (movement <= this.MOVEMENT_TOLERANCE) {
+            zone = "CENTER_FOCUS";
             isFocused = true;
             this.total_focus_time += dt;
             this.current_streak += dt;
             if (this.current_streak > this.max_streak) this.max_streak = this.current_streak;
         } else {
             this.current_streak = 0;
-            if (avgGaze < this.CHAR_ZONE_MIN) {
+            if (gaze.x < this.baseline.x) {
                 zone = "DISTRACTION_LEFT";
                 this.total_distraction_time += dt;
             } else {
@@ -56,7 +85,7 @@ class SocialDiagnosticModule {
         }
 
         return {
-            gazeScore: avgGaze,
+            gazeScore: movement,
             currentZone: zone,
             isFocused: isFocused,
             currentStreak: this.current_streak,
@@ -77,9 +106,12 @@ class SocialDiagnosticModule {
 }
 
 // --- 2. REACT COMPONENT ---
-const DiagnosticRecorder = ({ onBack }) => {
+const DiagnosticRecorder = ({ onBack, difficulty = "MEDIUM" }) => {
+    const sessionDuration = { EASY: 20, MEDIUM: 30, HARD: 40 }[difficulty] || 30;
+    const distractionRate = { EASY: 0.025, MEDIUM: 0.045, HARD: 0.07 }[difficulty] || 0.045;
     const [gameState, setGameState] = useState('loading'); 
     const [report, setReport] = useState(null);
+    const [cameraError, setCameraError] = useState("");
     const recordedResultRef = useRef(false);
     const [debugInfo, setDebugInfo] = useState({ gaze: 0, zone: 'WAITING' });
 
@@ -92,6 +124,7 @@ const DiagnosticRecorder = ({ onBack }) => {
     const startTimeRef = useRef(0); // Track start time
     const gameStateRef = useRef('loading'); 
     const particlesRef = useRef([]);
+    const streamRef = useRef(null);
 
     useEffect(() => {
         const initAI = async () => {
@@ -100,30 +133,28 @@ const DiagnosticRecorder = ({ onBack }) => {
                     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
                 );
 
-                landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, {
-                    baseOptions: {
-                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-                        delegate: "GPU"
-                    },
-                    outputFaceBlendshapes: true,
-                    runningMode: "VIDEO",
-                    numFaces: 1
-                });
-
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                    videoRef.current.addEventListener("loadeddata", () => {
-                        setGameState('ready');
-                        gameStateRef.current = 'ready';
+                try {
+                    landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, {
+                        baseOptions: { modelAssetPath: faceLandmarkerModel, delegate: "GPU" },
+                        outputFaceBlendshapes: true,
+                        runningMode: "VIDEO",
+                        numFaces: 1
                     });
-                    videoRef.current.play();
+                } catch {
+                    landmarkerRef.current = await FaceLandmarker.createFromOptions(filesetResolver, {
+                        baseOptions: { modelAssetPath: faceLandmarkerModel, delegate: "CPU" },
+                        outputFaceBlendshapes: true,
+                        runningMode: "VIDEO",
+                        numFaces: 1
+                    });
                 }
+                setGameState('permission');
+                gameStateRef.current = 'permission';
 
             } catch (error) {
                 console.error("Init Error:", error);
-                alert("Error: " + error.message);
+                setCameraError("The eye-tracking model could not load. Please refresh and try again.");
+                setGameState('error');
             }
         };
 
@@ -131,8 +162,34 @@ const DiagnosticRecorder = ({ onBack }) => {
 
         return () => {
             if (requestRef.current) cancelAnimationFrame(requestRef.current);
+            streamRef.current?.getTracks().forEach((track) => track.stop());
         };
     }, []);
+
+    const requestCamera = async () => {
+        setCameraError("");
+        try {
+            if (!navigator.mediaDevices?.getUserMedia) {
+                throw new Error("Camera access is not supported in this browser.");
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false,
+            });
+            streamRef.current = stream;
+            if (!videoRef.current) return;
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play();
+            setGameState('ready');
+            gameStateRef.current = 'ready';
+        } catch (error) {
+            setCameraError(error?.name === "NotAllowedError"
+                ? "Camera permission was blocked. Allow camera access in your browser settings, then try again."
+                : error.message || "The camera could not be started.");
+            setGameState('error');
+            gameStateRef.current = 'error';
+        }
+    };
 
     const startGame = () => {
         recordedResultRef.current = false;
@@ -152,7 +209,7 @@ const DiagnosticRecorder = ({ onBack }) => {
     useEffect(() => {
         if (gameState !== 'result' || !report || recordedResultRef.current) return;
         recordActivity({
-            activity: 'Focus Diagnostic',
+            activity: `Focus Diagnostic — ${difficulty[0] + difficulty.slice(1).toLowerCase()}`,
             skill: 'attention',
             score: Number(report.focusScore) || 0,
             maxScore: 100,
@@ -183,7 +240,7 @@ const DiagnosticRecorder = ({ onBack }) => {
         lastTimeRef.current = time;
 
         const elapsedTime = (time - startTimeRef.current) / 1000;
-        const timeLeft = Math.max(0, 30 - elapsedTime);
+        const timeLeft = Math.max(0, sessionDuration - elapsedTime);
 
         // 2. Stop if time is up
         if (timeLeft <= 0) {
@@ -228,15 +285,14 @@ const DiagnosticRecorder = ({ onBack }) => {
 
         // B. FALLING LUCID ICONS (Distractions)
         // Spawn Logic (Slightly faster spawn rate for distraction)
-        if (Math.random() < 0.08) {
-            const types = ['circle', 'square', 'triangle'];
+        if (Math.random() < distractionRate) {
+            const distractions = ['🧸', '🍭', '🧁', '🚀', '🍎', '⚽'];
             particlesRef.current.push({
                 x: Math.random() * w,
                 y: -30,
-                size: Math.random() * 15 + 10, // Larger icons
-                speed: Math.random() * 4 + 2,
-                type: types[Math.floor(Math.random() * types.length)],
-                color: `hsl(${Math.random() * 360}, 100%, 70%)` // Neon Colors
+                size: Math.random() * 18 + 24,
+                speed: Math.random() * 2 + 1,
+                icon: distractions[Math.floor(Math.random() * distractions.length)],
             });
         }
 
@@ -244,21 +300,9 @@ const DiagnosticRecorder = ({ onBack }) => {
         ctx.shadowBlur = 15; // Glow effect
         particlesRef.current.forEach((p, i) => {
             p.y += p.speed;
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color;
-
-            ctx.beginPath();
-            if (p.type === 'circle') {
-                ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-            } else if (p.type === 'square') {
-                ctx.rect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
-            } else if (p.type === 'triangle') {
-                ctx.moveTo(p.x, p.y - p.size/2);
-                ctx.lineTo(p.x + p.size/2, p.y + p.size/2);
-                ctx.lineTo(p.x - p.size/2, p.y + p.size/2);
-                ctx.closePath();
-            }
-            ctx.fill();
+            ctx.font = `${p.size}px "Segoe UI Emoji", sans-serif`;
+            ctx.textAlign = "center";
+            ctx.fillText(p.icon, p.x, p.y);
 
             if (p.y > h) particlesRef.current.splice(i, 1);
         });
@@ -276,6 +320,10 @@ const DiagnosticRecorder = ({ onBack }) => {
         if (data && data.isFocused) {
             dotColor = '#00FF00';
             ringColor = 'rgba(0, 255, 0, 0.3)';
+        }
+        if (data?.isCalibrating) {
+            dotColor = '#FFD43B';
+            ringColor = 'rgba(255, 212, 59, 0.35)';
         }
 
         // Draw Target
@@ -307,7 +355,7 @@ const DiagnosticRecorder = ({ onBack }) => {
         ctx.fillStyle = "rgba(255,255,255,0.5)";
         ctx.font = "16px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("STARE AT THE DOT", w/2, h - 30);
+        ctx.fillText(data?.isCalibrating ? "KEEP LOOKING AT THE DOT — CALIBRATING" : "STARE AT THE DOT", w/2, h - 30);
         
         ctx.restore();
     };
@@ -330,22 +378,38 @@ const DiagnosticRecorder = ({ onBack }) => {
             />
 
             {/* 2. OVERLAYS */}
-            {(gameState === 'loading' || gameState === 'ready') && (
+            {(gameState === 'loading' || gameState === 'permission' || gameState === 'ready' || gameState === 'error') && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-bingo-navy p-5 text-white">
                     <h1 className="mb-4 text-5xl font-bold">Focus Challenge</h1>
                     {gameState === 'loading' && (
                         <div className="toon-kicker animate-pulse text-bingo-navy">🤖 Mr. Bingo is getting ready…</div>
                     )}
+                    {gameState === 'permission' && (
+                        <div className="max-w-md text-center">
+                            <p className="mb-6 text-gray-300">
+                                Camera access is used only here to estimate whether your eyes stay near the center dot. Video is not uploaded or saved.
+                            </p>
+                            <button onClick={requestCamera} className="toon-button-primary px-8">Enable camera</button>
+                            <button onClick={onBack} className="toon-button-secondary ml-3">Back</button>
+                        </div>
+                    )}
                     {gameState === 'ready' && (
                         <div className="text-center">
                             <p className="mb-6 text-gray-400">
                                 The screen will turn black.<br/>
-                                Ignore the falling shapes.<br/>
-                                Keep your eyes on the <b>Red Dot</b>.
+                                Ignore the toys and treats.<br/>
+                                Green means focused; red means your gaze moved.
                             </p>
                             <button onClick={startGame} className="toon-button-primary px-8">
-                                Start 30s Test
+                                Start {sessionDuration}s Test
                             </button>
+                        </div>
+                    )}
+                    {gameState === 'error' && (
+                        <div className="max-w-md text-center">
+                            <p className="mb-6 rounded-2xl bg-red-500/15 p-4 font-semibold text-red-200">{cameraError}</p>
+                            <button onClick={requestCamera} className="toon-button-primary px-8">Try camera again</button>
+                            <button onClick={onBack} className="toon-button-secondary ml-3">Back</button>
                         </div>
                     )}
                 </div>

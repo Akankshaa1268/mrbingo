@@ -5,12 +5,18 @@ import { recordActivity } from '../utils/activityHistory.js';
 const GAME_DURATION_SEC = 60;
 
 const DIFFICULTY_CONFIG = {
-    EASY: { lanes: 2, obstaclesPerWave: 1, label: 'Easy', color: 'from-green-400 to-emerald-500', speed: 0.3, spawnRate: 4500, carScale: 0.5 },
-    MEDIUM: { lanes: 3, obstaclesPerWave: 2, label: 'Medium', color: 'from-yellow-400 to-amber-500', speed: 0.3, spawnRate: 4000, carScale: 0.4 },
-    HARD: { lanes: 4, obstaclesPerWave: 3, label: 'Hard', color: 'from-red-500 to-rose-600', speed: 0.3, spawnRate: 3500, carScale: 0.3 }
+    LEVEL_1: { level: 1, lanes: 2, obstaclesPerWave: 1, label: 'Biscuit Boulevard', color: 'from-green-400 to-emerald-500', speed: 0.22, spawnRate: 4800, carScale: 0.52 },
+    LEVEL_2: { level: 2, lanes: 2, obstaclesPerWave: 1, label: 'Jellybean Junction', color: 'from-cyan-400 to-blue-500', speed: 0.26, spawnRate: 4400, carScale: 0.5 },
+    LEVEL_3: { level: 3, lanes: 2, obstaclesPerWave: 1, label: 'Lollipop Lane', color: 'from-pink-400 to-rose-500', speed: 0.3, spawnRate: 4100, carScale: 0.48 },
+    LEVEL_4: { level: 4, lanes: 3, obstaclesPerWave: 2, label: 'Cookie Crossing', color: 'from-amber-400 to-orange-500', speed: 0.32, spawnRate: 3900, carScale: 0.42 },
+    LEVEL_5: { level: 5, lanes: 3, obstaclesPerWave: 2, label: 'Marshmallow Mile', color: 'from-violet-400 to-purple-600', speed: 0.35, spawnRate: 3600, carScale: 0.4 },
+    LEVEL_6: { level: 6, lanes: 3, obstaclesPerWave: 2, label: 'Candy Canyon', color: 'from-red-400 to-pink-600', speed: 0.39, spawnRate: 3350, carScale: 0.38 },
+    LEVEL_7: { level: 7, lanes: 4, obstaclesPerWave: 3, label: 'Rainbow Rush', color: 'from-sky-400 to-indigo-600', speed: 0.42, spawnRate: 3100, carScale: 0.33 },
+    LEVEL_8: { level: 8, lanes: 4, obstaclesPerWave: 3, label: 'Sugarstorm Speedway', color: 'from-fuchsia-500 to-rose-600', speed: 0.46, spawnRate: 2850, carScale: 0.31 },
+    LEVEL_9: { level: 9, lanes: 4, obstaclesPerWave: 3, label: 'Star Cup', color: 'from-yellow-400 to-red-500', speed: 0.5, spawnRate: 2600, carScale: 0.3 }
 };
 
-export const CerebralCarGame = ({ onBack }) => {
+export const CerebralCarGame = ({ onBack, initialDifficulty }) => {
     // Game State
     const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD'
     const [isPlaying, setIsPlaying] = useState(false);
@@ -100,6 +106,12 @@ export const CerebralCarGame = ({ onBack }) => {
         recordedResultRef.current = false;
     };
 
+    useEffect(() => {
+        if (!initialDifficulty || difficulty) return;
+        const startingLevels = { EASY: 'LEVEL_1', MEDIUM: 'LEVEL_5', HARD: 'LEVEL_9' };
+        startGame(startingLevels[initialDifficulty] || 'LEVEL_1');
+    }, [initialDifficulty]);
+
     const endGame = () => {
         setIsGameOver(true);
         setIsPlaying(false);
@@ -179,12 +191,19 @@ export const CerebralCarGame = ({ onBack }) => {
             blockedLanes.push(availableLanes[i]);
         }
 
-        const newObstacles = blockedLanes.map(lane => ({
+        const toyPaints = [
+            'from-orange-200 via-orange-500 to-red-900 border-yellow-200',
+            'from-lime-200 via-emerald-500 to-teal-950 border-lime-200',
+            'from-fuchsia-200 via-purple-500 to-indigo-950 border-pink-200',
+            'from-yellow-100 via-yellow-400 to-orange-800 border-white',
+        ];
+        const newObstacles = blockedLanes.map((lane, index) => ({
             id: Date.now() + Math.random(),
             lane: lane,
             y: -20,
             hasCollided: false,
-            instructionShown: false
+            instructionShown: false,
+            paint: toyPaints[(index + Math.floor(Math.random() * toyPaints.length)) % toyPaints.length],
         }));
 
         setObstacles(prev => [...prev, ...newObstacles]);
@@ -195,7 +214,7 @@ export const CerebralCarGame = ({ onBack }) => {
         setObstacles(prev => {
             const nextObs = [];
             const currentLane = playerLaneRef.current;
-            const config = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.EASY;
+            const config = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.LEVEL_1;
 
             // Standardized Coordinates (Percentage from Top)
             const PLAYER_TOP = 75;
@@ -285,28 +304,23 @@ export const CerebralCarGame = ({ onBack }) => {
             <div className="game-shell flex min-h-[60vh] max-w-4xl flex-col items-center justify-center">
                 <h2 className="mb-2 text-5xl font-bold text-bingo-navy">Cerebral Racer 🏎️</h2>
                 <p className="mb-8 max-w-md text-center font-semibold text-bingo-navy/65">
-                    Choose your difficulty. Dodge the traffic!
+                    Follow the candy road. Every level adds speed, lanes, and trickier traffic.
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-12">
-                    {Object.keys(DIFFICULTY_CONFIG).map(key => {
+                <div className="relative mb-12 w-full max-w-2xl space-y-4 py-4">
+                    <div className="absolute bottom-8 left-1/2 top-8 w-4 -translate-x-1/2 rounded-full bg-gradient-to-b from-bingo-yellow via-bingo-coral to-bingo-indigo opacity-35" />
+                    {Object.keys(DIFFICULTY_CONFIG).map((key, index) => {
                         const level = DIFFICULTY_CONFIG[key];
                         return (
-                            <button
-                                key={key}
-                                onClick={() => startGame(key)}
-                                className={`
-                                    flex flex-col items-center justify-center p-8 rounded-3xl 
-                                    bg-white border-4 shadow-xl hover:scale-105 transition-transform
-                                    border-slate-200
-                                `}
-                            >
-                                <span className={`text-3xl font-black bg-gradient-to-r ${level.color} bg-clip-text text-transparent mb-2`}>{level.label}</span>
-                                <div className="text-slate-400 font-bold text-sm">
-                                    {level.lanes} Lanes <br />
-                                    {level.obstaclesPerWave} Cars at once
-                                </div>
-                            </button>
+                            <div key={key} className={`relative z-10 flex ${index % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+                                <button onClick={() => startGame(key)} className="toon-card flex w-[47%] min-w-56 items-center gap-3 p-4 text-left hover:scale-[1.03]">
+                                    <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-2xl font-black text-white shadow-pop-sm ${level.color}`}>{level.level}</span>
+                                    <span>
+                                        <span className="block font-display text-base font-bold text-bingo-navy">{level.label}</span>
+                                        <span className="text-xs font-bold text-bingo-navy/45">{level.lanes} lanes · speed {level.level}</span>
+                                    </span>
+                                </button>
+                            </div>
                         );
                     })}
                 </div>
@@ -322,9 +336,12 @@ export const CerebralCarGame = ({ onBack }) => {
     const laneWidthPercent = 100 / config.lanes;
 
     return (
-        <div className="relative mx-auto h-[80vh] w-full max-w-2xl overflow-hidden rounded-[2.5rem] border-[6px] border-bingo-navy bg-slate-800 shadow-pop">
+        <div className="relative mx-auto h-[80vh] w-full max-w-3xl overflow-hidden rounded-[2.5rem] border-[6px] border-bingo-navy bg-gradient-to-b from-sky-300 via-sky-100 to-emerald-200 shadow-pop">
+            <div className="absolute left-0 right-0 top-[14%] z-0 flex justify-around text-5xl" aria-hidden="true">
+                <span>🍭</span><span>☁️</span><span>🍬</span><span>🧁</span><span>☁️</span>
+            </div>
             {/* Road Surface */}
-            <div className="absolute inset-0 flex">
+            <div className="absolute -bottom-[12%] left-[-18%] right-[-18%] top-[22%] flex origin-top bg-gradient-to-b from-slate-600 to-slate-950 [clip-path:polygon(38%_0,62%_0,100%_100%,0_100%)]">
                 {Array.from({ length: config.lanes }).map((_, i) => (
                     <div key={i} className="h-full border-r-2 border-dashed border-white/20 relative" style={{ width: `${laneWidthPercent}%` }}>
                         {/* Lane Number (optional debugging) */}
@@ -348,13 +365,17 @@ export const CerebralCarGame = ({ onBack }) => {
                         transform: 'translateX(-50%)'
                     }}
                 >
-                    <div className={`w-full aspect-[2/3] rounded-2xl shadow-lg border-4 relative 
-                        ${obs.hasCollided ? 'bg-slate-700 grayscale scale-90 rotate-12 opacity-80' : 'bg-red-500 border-red-300'}
+                    <div className={`relative aspect-[2/3] w-full rounded-[38%_38%_20%_20%] border-4 shadow-[0_14px_22px_rgba(0,0,0,.5)]
+                        ${obs.hasCollided ? 'bg-slate-700 grayscale scale-90 rotate-12 opacity-80' : `bg-gradient-to-b ${obs.paint}`}
                     `}>
                         {obs.hasCollided && (
                             <div className="absolute inset-0 flex items-center justify-center text-3xl">💥</div>
                         )}
                         <div className="absolute bottom-2 left-2 right-2 h-[20%] bg-sky-900/50 rounded-sm"></div>
+                        <div className="absolute left-[12%] right-[12%] top-[12%] h-[25%] rounded-t-xl bg-sky-100/80" />
+                        <div className="absolute bottom-[23%] left-[8%] h-[18%] w-[70%] -skew-x-12 rounded-r-full bg-gradient-to-r from-yellow-300 via-orange-500 to-transparent opacity-90" />
+                        <div className="absolute -bottom-1 -left-2 h-7 w-4 rounded-full bg-slate-950" />
+                        <div className="absolute -bottom-1 -right-2 h-7 w-4 rounded-full bg-slate-950" />
                     </div>
                 </div>
             ))}
@@ -371,9 +392,12 @@ export const CerebralCarGame = ({ onBack }) => {
                     translateX: "-50%"
                 }}
             >
-                <div className="w-full aspect-[2/3] bg-blue-500 rounded-2xl shadow-lg border-4 border-blue-300 relative overflow-hidden group">
+                <div className="group relative aspect-[2/3] w-full overflow-visible rounded-[38%_38%_18%_18%] border-4 border-cyan-200 bg-gradient-to-b from-cyan-200 via-blue-500 to-indigo-950 shadow-[0_18px_26px_rgba(0,0,0,.55)]">
                     <div className="absolute top-2 left-2 right-2 h-[20%] bg-sky-900/50 rounded-sm"></div>
                     <div className="absolute bottom-2 left-2 right-2 h-[10%] bg-red-500/80 rounded-sm"></div>
+                    <div className="absolute bottom-[24%] left-[7%] h-[20%] w-[74%] -skew-x-12 rounded-r-full bg-gradient-to-r from-yellow-200 via-orange-500 to-red-600 opacity-95" />
+                    <div className="absolute -bottom-2 -left-2 h-8 w-4 rounded-full bg-slate-950" />
+                    <div className="absolute -bottom-2 -right-2 h-8 w-4 rounded-full bg-slate-950" />
                     {/* Headlights */}
                     <div className="absolute -top-12 left-2 w-4 h-24 bg-yellow-200/40 blur-md rounded-full"></div>
                     <div className="absolute -top-12 right-2 w-4 h-24 bg-yellow-200/40 blur-md rounded-full"></div>

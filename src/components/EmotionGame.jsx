@@ -27,7 +27,7 @@ const DIFFICULTY_CONFIG = {
 
 const QUESTIONS_PER_SESSION = 6;
 
-export const EmotionGame = ({ onBack }) => {
+export const EmotionGame = ({ onBack, initialDifficulty }) => {
     // Game State
     const [difficulty, setDifficulty] = useState(null); // 'EASY', 'MEDIUM', 'HARD'
     const [questions, setQuestions] = useState([]);
@@ -50,6 +50,10 @@ export const EmotionGame = ({ onBack }) => {
         setCurrentQuestionIndex(0);
         setGameState('playing');
     };
+
+    useEffect(() => {
+        if (initialDifficulty && gameState === 'menu') startGame(initialDifficulty);
+    }, [initialDifficulty]);
 
     useEffect(() => {
         if (gameState !== 'result' || recordedResultRef.current || !difficulty) return;
